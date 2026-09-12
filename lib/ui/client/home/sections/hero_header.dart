@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/animations.dart';
@@ -25,8 +27,7 @@ class HeroHeader extends ConsumerWidget {
           Image.network(
             _bgImage,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: AppColors.primary),
+            errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
           ),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -46,7 +47,10 @@ class HeroHeader extends ConsumerWidget {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.xxl,
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.xl,
+                AppSpacing.xxl,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,17 +76,9 @@ class HeroHeader extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 120),
-                    child: Text(
-                      'Achetez. Vendez. Rayonnez.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
+                  const FadeSlideIn(
+                    delay: Duration(milliseconds: 120),
+                    child: _RotatingTagline(),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   const FadeSlideIn(
@@ -94,6 +90,78 @@ class HeroHeader extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RotatingTagline extends StatefulWidget {
+  const _RotatingTagline();
+
+  @override
+  State<_RotatingTagline> createState() => _RotatingTaglineState();
+}
+
+class _RotatingTaglineState extends State<_RotatingTagline> {
+  static const _phrases = [
+    'Achetez vos coups de cœur en toute confiance.',
+    'Vendez vos produits à une communauté engagée.',
+    'Rayonnez avec une boutique qui vous ressemble.',
+  ];
+  late final Timer _timer;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1600), (_) {
+      if (!mounted) return;
+      setState(() => _index = (_index + 1) % _phrases.length);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 420),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final offset = Tween<Offset>(
+            begin: const Offset(0, 0.75),
+            end: Offset.zero,
+          ).animate(animation);
+
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: offset, child: child),
+          );
+        },
+        child: Align(
+          key: ValueKey(_phrases[_index]),
+          alignment: Alignment.centerLeft,
+          child: Text(
+            _phrases[_index],
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontStyle: FontStyle.italic,
+              letterSpacing: 0.2,
+              height: 1.35,
+            ),
+          ),
+        ),
       ),
     );
   }

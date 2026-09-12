@@ -7,14 +7,13 @@ class AppUser {
   final UserRole role;
   final String? avatarUrl;
 
-  // ---- Champs vendeur (null pour client) ----
   final String? shopName;
-  final String? shopTagline;      // Phrase d'accroche courte
-  final String? shopDescription;  // Bio longue
-  final String? shopBannerUrl;    // Image de bannière
+  final String? shopTagline;
+  final String? shopDescription;
+  final String? shopBannerUrl;
   final String? shopCity;
   final String? shopCountry;
-  final List<String> shopCategories; // Catégories vendues
+  final List<String> shopCategories;
   final bool isVerified;
   final int shopSales;
   final double shopRating;
@@ -47,7 +46,6 @@ class AppUser {
 
   bool get isVendor => role == UserRole.vendor;
 
-  /// "Répond en ~2h" formaté depuis les minutes.
   String get responseTimeLabel {
     if (shopResponseTimeMinutes < 60) {
       return '~${shopResponseTimeMinutes}min';
@@ -58,29 +56,37 @@ class AppUser {
 
   AppUser copyWith({
     String? name,
+    String? email,
+    String? avatarUrl,
     String? shopName,
     String? shopTagline,
     String? shopDescription,
+    String? shopBannerUrl,
+    String? shopCity,
+    String? shopCountry,
+    List<String>? shopCategories,
+    int? shopResponseTimeMinutes,
   }) {
     return AppUser(
       id: id,
       name: name ?? this.name,
-      email: email,
+      email: email ?? this.email,
       role: role,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       shopName: shopName ?? this.shopName,
       shopTagline: shopTagline ?? this.shopTagline,
       shopDescription: shopDescription ?? this.shopDescription,
-      shopBannerUrl: shopBannerUrl,
-      shopCity: shopCity,
-      shopCountry: shopCountry,
-      shopCategories: shopCategories,
+      shopBannerUrl: shopBannerUrl ?? this.shopBannerUrl,
+      shopCity: shopCity ?? this.shopCity,
+      shopCountry: shopCountry ?? this.shopCountry,
+      shopCategories: shopCategories ?? this.shopCategories,
       isVerified: isVerified,
       shopSales: shopSales,
       shopRating: shopRating,
       shopReviewCount: shopReviewCount,
       shopProductCount: shopProductCount,
-      shopResponseTimeMinutes: shopResponseTimeMinutes,
+      shopResponseTimeMinutes:
+          shopResponseTimeMinutes ?? this.shopResponseTimeMinutes,
       shopFoundedYear: shopFoundedYear,
     );
   }

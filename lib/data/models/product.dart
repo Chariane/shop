@@ -43,8 +43,6 @@ class Product {
     required this.createdAt,
   });
 
-  // --- Getters calculés (jamais stockés) ---
-
   bool get isOnSale => originalPrice != null && originalPrice! > price;
 
   int get discountPercent => isOnSale
@@ -55,36 +53,44 @@ class Product {
 
   bool get isLowStock => isInStock && stock <= 5;
 
-  /// Toutes les images (principale + galerie) sans doublons.
   List<String> get allImages => [imageUrl, ...gallery];
 
   Product copyWith({
+    String? vendorName,
     String? name,
     String? shortDescription,
+    String? longDescription,
     double? price,
+    double? originalPrice,
+    String? imageUrl,
+    String? category,
+    List<String>? tags,
+    Map<String, String>? specifications,
     int? stock,
     bool? isActive,
+    bool? freeShipping,
+    int? warrantyMonths,
   }) {
     return Product(
       id: id,
       vendorId: vendorId,
-      vendorName: vendorName,
+      vendorName: vendorName ?? this.vendorName,
       name: name ?? this.name,
       shortDescription: shortDescription ?? this.shortDescription,
-      longDescription: longDescription,
+      longDescription: longDescription ?? this.longDescription,
       price: price ?? this.price,
-      originalPrice: originalPrice,
-      imageUrl: imageUrl,
+      originalPrice: originalPrice ?? this.originalPrice,
+      imageUrl: imageUrl ?? this.imageUrl,
       gallery: gallery,
-      category: category,
-      tags: tags,
-      specifications: specifications,
+      category: category ?? this.category,
+      tags: tags ?? this.tags,
+      specifications: specifications ?? this.specifications,
       rating: rating,
       reviewCount: reviewCount,
       stock: stock ?? this.stock,
       isActive: isActive ?? this.isActive,
-      freeShipping: freeShipping,
-      warrantyMonths: warrantyMonths,
+      freeShipping: freeShipping ?? this.freeShipping,
+      warrantyMonths: warrantyMonths ?? this.warrantyMonths,
       createdAt: createdAt,
     );
   }

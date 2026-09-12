@@ -59,8 +59,7 @@ class ProductSpecs extends StatelessWidget {
                   if (!isLast)
                     Divider(
                       height: 1,
-                      color:
-                          context.textMuted.withValues(alpha: 0.15),
+                      color: context.textMuted.withValues(alpha: 0.15),
                     ),
                 ],
               );

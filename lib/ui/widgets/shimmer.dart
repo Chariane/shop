@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// ==========================================================
-/// Shimmer — Effet "respiration" pendant le chargement.
-/// Plus pro que le CircularProgressIndicator, très visuel.
-/// ==========================================================
 class Shimmer extends StatefulWidget {
   final Widget child;
   const Shimmer({super.key, required this.child});
@@ -12,8 +8,7 @@ class Shimmer extends StatefulWidget {
   State<Shimmer> createState() => _ShimmerState();
 }
 
-class _ShimmerState extends State<Shimmer>
-    with SingleTickerProviderStateMixin {
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -35,7 +30,8 @@ class _ShimmerState extends State<Shimmer>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final base = isDark ? const Color(0xFF23232E) : const Color(0xFFEAEAF0);
-    final highlight = isDark ? const Color(0xFF2E2E3D) : const Color(0xFFF5F5F8);
+    final highlight =
+        isDark ? const Color(0xFF2E2E3D) : const Color(0xFFF5F5F8);
 
     return AnimatedBuilder(
       animation: _controller,
@@ -68,9 +64,6 @@ class _SlidingGradient extends GradientTransform {
       Matrix4.translationValues(dx, 0, 0);
 }
 
-/// ==========================================================
-/// ShimmerCard — Placeholder d'une carte produit en chargement.
-/// ==========================================================
 class ShimmerProductCard extends StatelessWidget {
   const ShimmerProductCard({super.key});
 

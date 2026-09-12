@@ -15,7 +15,10 @@ class ShopAbout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0,
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

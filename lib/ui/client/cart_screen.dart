@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/animations.dart';
 import '../../core/theme.dart';
 import '../../providers/cart_providers.dart';
+import 'checkout/checkout_screen.dart';
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
@@ -59,8 +61,7 @@ class CartScreen extends ConsumerWidget {
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () =>
-                      ref.read(cartProvider.notifier).clear(),
+                  onPressed: () => ref.read(cartProvider.notifier).clear(),
                   child: const Text(
                     'Vider',
                     style: TextStyle(color: AppColors.accent),
@@ -89,8 +90,7 @@ class CartScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.sm),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         child: Image.network(
                           item.product.imageUrl,
                           width: 64,
@@ -133,10 +133,20 @@ class CartScreen extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.md,
                                   ),
-                                  child: Text(
-                                    '${item.quantity}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 180),
+                                    transitionBuilder: (child, animation) {
+                                      return ScaleTransition(
+                                        scale: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    child: Text(
+                                      '${item.quantity}',
+                                      key: ValueKey(item.quantity),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -145,6 +155,36 @@ class CartScreen extends ConsumerWidget {
                                   () => ref
                                       .read(cartProvider.notifier)
                                       .increment(item.product.id),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: 'Retirer',
+                                  onPressed: () {
+                                    ref
+                                        .read(cartProvider.notifier)
+                                        .remove(item.product.id);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '${item.product.name} retiré du panier',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.md,
+                                          ),
+                                        ),
+                                        margin: const EdgeInsets.all(
+                                          AppSpacing.lg,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: AppColors.danger,
+                                    size: 20,
+                                  ),
                                 ),
                               ],
                             ),
@@ -194,7 +234,10 @@ class CartScreen extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.xxl),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => Navigator.push(
+                        context,
+                        SlidePageRoute(child: const CheckoutScreen()),
+                      ),
                       child: const Text('Commander'),
                     ),
                   ),

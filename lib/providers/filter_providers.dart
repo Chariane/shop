@@ -41,24 +41,24 @@ class FilterNotifier extends StateNotifier<FilterState> {
   FilterNotifier() : super(const FilterState());
 
   void setQuery(String query) => state = state.copyWith(query: query);
-  void setCategory(String category) => state = state.copyWith(category: category);
+  void setCategory(String category) =>
+      state = state.copyWith(category: category);
   void setSort(SortOption sort) => state = state.copyWith(sort: sort);
   void reset() => state = const FilterState();
 }
 
-/// [PROVIDER] État des filtres
 final filterProvider =
     StateNotifierProvider<FilterNotifier, FilterState>((ref) {
   return FilterNotifier();
 });
 
-/// [PROVIDER] Liste filtrée + triée
 final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
   final products = ref.watch(productsProvider);
   final filter = ref.watch(filterProvider);
 
   return products.whenData((list) {
-    var result = list.where((p) {
+    final result = list.where((p) {
+      if (!p.isActive) return false;
       final matchQuery = filter.query.isEmpty ||
           p.name.toLowerCase().contains(filter.query.toLowerCase()) ||
           p.vendorName.toLowerCase().contains(filter.query.toLowerCase());

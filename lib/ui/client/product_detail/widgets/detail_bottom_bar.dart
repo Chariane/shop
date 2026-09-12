@@ -53,16 +53,14 @@ class _DetailBottomBarState extends ConsumerState<DetailBottomBar> {
               children: [
                 Text(
                   'Prix',
-                  style:
-                      TextStyle(fontSize: 11, color: context.textMuted),
+                  style: TextStyle(fontSize: 11, color: context.textMuted),
                 ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     if (widget.product.isOnSale)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(right: 6, bottom: 2),
+                        padding: const EdgeInsets.only(right: 6, bottom: 2),
                         child: Text(
                           '${widget.product.originalPrice!.toStringAsFixed(2)} €',
                           style: TextStyle(
@@ -103,9 +101,7 @@ class _DetailBottomBarState extends ConsumerState<DetailBottomBar> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _added
-                          ? Icons.check_rounded
-                          : Icons.shopping_bag_rounded,
+                      _added ? Icons.check_rounded : Icons.shopping_bag_rounded,
                       size: 18,
                     ),
                     const SizedBox(width: AppSpacing.sm),

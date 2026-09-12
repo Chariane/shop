@@ -28,7 +28,7 @@ class ProductRow extends ConsumerWidget {
         loading: () => _skeletons(context),
         error: (e, _) => Center(child: Text('Erreur : $e')),
         data: (list) {
-          var sorted = [...list];
+          var sorted = list.where((p) => p.isActive).toList();
           if (filterOnSale) {
             sorted = sorted.where((p) => p.isOnSale).toList();
           } else if (sortByNewest) {
@@ -48,8 +48,7 @@ class ProductRow extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             itemCount: sorted.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(width: AppSpacing.md),
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, i) => SizedBox(
               width: 150,
               child: ProductCard(

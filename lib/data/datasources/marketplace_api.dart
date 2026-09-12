@@ -3,7 +3,6 @@ import '../models/product.dart';
 import 'mocks/products_mock.dart';
 import 'mocks/vendors_mock.dart';
 
-/// Fake API — simule un backend. À remplacer par Firebase/Supabase en prod.
 class MarketplaceApi {
   Future<List<AppUser>> fetchVendors() async {
     await Future.delayed(const Duration(milliseconds: 300));

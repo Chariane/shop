@@ -20,17 +20,21 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
 
   void increment(String productId) {
     state = state
-        .map((i) => i.product.id == productId
-            ? i.copyWith(quantity: i.quantity + 1)
-            : i)
+        .map(
+          (i) => i.product.id == productId
+              ? i.copyWith(quantity: i.quantity + 1)
+              : i,
+        )
         .toList();
   }
 
   void decrement(String productId) {
     state = state
-        .map((i) => i.product.id == productId
-            ? i.copyWith(quantity: i.quantity - 1)
-            : i)
+        .map(
+          (i) => i.product.id == productId
+              ? i.copyWith(quantity: i.quantity - 1)
+              : i,
+        )
         .where((i) => i.quantity > 0)
         .toList();
   }
@@ -42,23 +46,18 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
   void clear() => state = const [];
 }
 
-/// [PROVIDER] Panier brut
-final cartProvider =
-    StateNotifierProvider<CartNotifier, List<CartItem>>((ref) {
+final cartProvider = StateNotifierProvider<CartNotifier, List<CartItem>>((ref) {
   return CartNotifier();
 });
 
-/// [PROVIDER] Nombre total d'articles (badge)
 final cartCountProvider = Provider<int>((ref) {
   return ref.watch(cartProvider).fold(0, (sum, i) => sum + i.quantity);
 });
 
-/// [PROVIDER] Total général
 final cartTotalProvider = Provider<double>((ref) {
   return ref.watch(cartProvider).fold(0.0, (sum, i) => sum + i.subtotal);
 });
 
-/// [PROVIDER] Panier groupé par vendeur (marketplace)
 final cartByVendorProvider = Provider<Map<String, List<CartItem>>>((ref) {
   final items = ref.watch(cartProvider);
   final grouped = <String, List<CartItem>>{};

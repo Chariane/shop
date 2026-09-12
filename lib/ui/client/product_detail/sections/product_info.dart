@@ -11,7 +11,6 @@ class ProductInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Catégorie + promo + note
         Row(
           children: [
             _pill(
@@ -51,22 +50,16 @@ class ProductInfo extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-
-        // Nom
         Text(
           product.name,
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: AppSpacing.sm),
-
-        // Courte description
         Text(
           product.shortDescription,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: AppSpacing.xl),
-
-        // Tags
         if (product.tags.isNotEmpty)
           Wrap(
             spacing: AppSpacing.sm,

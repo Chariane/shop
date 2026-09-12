@@ -57,15 +57,16 @@ class VendorShopScreen extends ConsumerWidget {
                 delay: const Duration(milliseconds: 320),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xl, AppSpacing.xxxl, AppSpacing.xl,
+                    AppSpacing.xl,
+                    AppSpacing.xxxl,
+                    AppSpacing.xl,
                     AppSpacing.md,
                   ),
                   child: Row(
                     children: [
                       Text(
                         'Produits',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
@@ -89,7 +90,10 @@ class VendorShopScreen extends ConsumerWidget {
               ),
               data: (products) => SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 100,
+                  AppSpacing.xl,
+                  AppSpacing.md,
+                  AppSpacing.xl,
+                  100,
                 ),
                 sliver: SliverGrid(
                   gridDelegate: _delegate,
@@ -129,7 +133,10 @@ class VendorShopScreen extends ConsumerWidget {
   Widget _grid(List<Widget> children) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 100,
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        100,
       ),
       sliver: SliverGrid(
         gridDelegate: _delegate,

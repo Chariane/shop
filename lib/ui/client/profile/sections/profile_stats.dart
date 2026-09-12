@@ -11,7 +11,7 @@ class ProfileStats extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favCount = ref.watch(favoritesProvider).length;
+    final favCount = ref.watch(favoritesCountProvider);
     final cartCount = ref.watch(cartCountProvider);
 
     return Row(

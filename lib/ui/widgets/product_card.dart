@@ -31,7 +31,6 @@ class ProductCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ---------- IMAGE ----------
             Expanded(
               flex: 5,
               child: Stack(
@@ -58,8 +57,6 @@ class ProductCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-
-                  // Badge promo (si applicable)
                   if (product.isOnSale)
                     Positioned(
                       top: AppSpacing.sm,
@@ -85,8 +82,6 @@ class ProductCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-
-                  // Bouton favori
                   Positioned(
                     top: AppSpacing.xs,
                     right: AppSpacing.xs,
@@ -94,9 +89,17 @@ class ProductCard extends ConsumerWidget {
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(50),
-                        onTap: () => ref
-                            .read(favoritesProvider.notifier)
-                            .toggle(product.id),
+                        onTap: () async {
+                          final added = await ref
+                              .read(favoritesProvider.notifier)
+                              .toggle(product.id);
+                          if (!context.mounted) return;
+                          _showFeedback(
+                            context,
+                            added ? 'Ajouté aux favoris' : 'Retiré des favoris',
+                            added ? AppColors.accent : context.textMuted,
+                          );
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.all(6),
@@ -126,8 +129,6 @@ class ProductCard extends ConsumerWidget {
                 ],
               ),
             ),
-
-            // ---------- INFOS ----------
             Expanded(
               flex: 4,
               child: Padding(
@@ -240,6 +241,11 @@ class _AddButtonState extends ConsumerState<_AddButton>
     await _controller.reverse();
     if (!mounted) return;
     ref.read(cartProvider.notifier).add(widget.product);
+    _showFeedback(
+      context,
+      '${widget.product.name} ajouté au panier',
+      AppColors.success,
+    );
   }
 
   @override
@@ -255,13 +261,35 @@ class _AddButtonState extends ConsumerState<_AddButton>
             gradient: AppColors.gradient,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.white,
-            size: 18,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            transitionBuilder: (child, animation) {
+              return ScaleTransition(scale: animation, child: child);
+            },
+            child: const Icon(
+              Icons.add_rounded,
+              key: ValueKey('add-icon'),
+              color: Colors.white,
+              size: 18,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+void _showFeedback(BuildContext context, String message, Color color) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: color,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(milliseconds: 1200),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      margin: const EdgeInsets.all(AppSpacing.lg),
+    ),
+  );
 }

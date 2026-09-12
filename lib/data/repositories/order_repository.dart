@@ -1,7 +1,5 @@
 import '../models/order.dart';
 
-/// Stockage en mémoire (démo).
-/// En prod : Firestore collection 'orders'.
 class OrderRepository {
   final List<Order> _orders = [];
 

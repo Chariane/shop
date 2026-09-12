@@ -46,8 +46,7 @@ class ProfileWallet extends StatelessWidget {
                   children: [
                     Text(
                       'Mes points ShopHub',
-                      style:
-                          TextStyle(fontSize: 12, color: context.textMuted),
+                      style: TextStyle(fontSize: 12, color: context.textMuted),
                     ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,

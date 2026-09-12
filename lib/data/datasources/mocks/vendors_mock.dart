@@ -6,7 +6,8 @@ abstract final class VendorsMock {
     name: 'Karim Benali',
     email: 'karim@technova.com',
     role: UserRole.vendor,
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80',
     shopName: 'TechNova',
     shopTagline: 'La tech qui simplifie la vie',
     shopDescription:
@@ -17,7 +18,7 @@ abstract final class VendorsMock {
         'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1400&q=80',
     shopCity: 'Paris',
     shopCountry: 'France',
-    shopCategories: const ['Tech', 'Audio', 'Wearables'],
+    shopCategories: ['Tech', 'Audio', 'Wearables'],
     isVerified: true,
     shopSales: 1284,
     shopRating: 4.8,
@@ -32,7 +33,8 @@ abstract final class VendorsMock {
     name: 'Sarah Lopez',
     email: 'sarah@urbanwear.com',
     role: UserRole.vendor,
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80',
     shopName: 'UrbanWear',
     shopTagline: 'Le style urbain, sans compromis',
     shopDescription:
@@ -42,7 +44,7 @@ abstract final class VendorsMock {
         'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1400&q=80',
     shopCity: 'Lyon',
     shopCountry: 'France',
-    shopCategories: const ['Mode', 'Accessoires'],
+    shopCategories: ['Mode', 'Accessoires'],
     isVerified: true,
     shopSales: 967,
     shopRating: 4.6,
@@ -57,17 +59,17 @@ abstract final class VendorsMock {
     name: 'Marc Dubois',
     email: 'marc@casadeco.com',
     role: UserRole.vendor,
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80',
     shopName: 'Casa Déco',
     shopTagline: 'Le coin qui vous ressemble',
-    shopDescription:
-        'Casa Déco propose une sélection de pièces artisanales et '
+    shopDescription: 'Casa Déco propose une sélection de pièces artisanales et '
         'design scandinave. Chaque objet a une histoire.',
     shopBannerUrl:
         'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1400&q=80',
     shopCity: 'Copenhague',
     shopCountry: 'Danemark',
-    shopCategories: const ['Maison', 'Luminaires', 'Textile'],
+    shopCategories: ['Maison', 'Luminaires', 'Textile'],
     isVerified: true,
     shopSales: 2103,
     shopRating: 4.9,

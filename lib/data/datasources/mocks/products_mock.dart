@@ -4,7 +4,6 @@ abstract final class ProductsMock {
   static List<Product> generate() {
     final now = DateTime.now();
     return [
-      // -------- TechNova --------
       Product(
         id: 'p1',
         vendorId: 'v1',
@@ -97,15 +96,13 @@ abstract final class ProductsMock {
         freeShipping: true,
         createdAt: now.subtract(const Duration(hours: 6)),
       ),
-      // -------- UrbanWear --------
       Product(
         id: 'p4',
         vendorId: 'v2',
         vendorName: 'UrbanWear',
         name: 'Sneakers Urban White',
         shortDescription: 'Cuir pleine fleur, semelle coussinée',
-        longDescription:
-            'Les Sneakers Urban White sont le fruit de 3 ans de '
+        longDescription: 'Les Sneakers Urban White sont le fruit de 3 ans de '
             'développement. Cuir pleine fleur italien, semelle à mémoire '
             'de forme. Fabriquées au Portugal.',
         price: 119.00,
@@ -134,8 +131,7 @@ abstract final class ProductsMock {
         vendorName: 'UrbanWear',
         name: 'Sac Cuir Élégant',
         shortDescription: 'Cuir italien, finitions soignées',
-        longDescription:
-            'Un sac qui traverse les années. Cuir tanné végétal, '
+        longDescription: 'Un sac qui traverse les années. Cuir tanné végétal, '
             'coutures sellier, doublure coton bio. Compartiment 13".',
         price: 229.00,
         originalPrice: 289.00,
@@ -164,8 +160,7 @@ abstract final class ProductsMock {
         vendorName: 'UrbanWear',
         name: 'Lunettes Horizon',
         shortDescription: 'Verres polarisés UV400, monture acétate',
-        longDescription:
-            'Protégez vos yeux sans sacrifier le style. Verres '
+        longDescription: 'Protégez vos yeux sans sacrifier le style. Verres '
             'polarisés, protection UV400, monture acétate bio-sourcée.',
         price: 139.00,
         imageUrl:
@@ -182,7 +177,6 @@ abstract final class ProductsMock {
         stock: 45,
         createdAt: now.subtract(const Duration(days: 7)),
       ),
-      // -------- Casa Déco --------
       Product(
         id: 'p7',
         vendorId: 'v3',

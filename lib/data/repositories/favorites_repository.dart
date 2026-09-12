@@ -1,6 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persistance locale des favoris.
 class FavoritesRepository {
   static const _storageKey = 'favorites_ids';
 
@@ -12,6 +11,6 @@ class FavoritesRepository {
 
   Future<void> save(Set<String> ids) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_storageKey, ids.toList());
+    await prefs.setStringList(_storageKey, ids.toList()..sort());
   }
 }

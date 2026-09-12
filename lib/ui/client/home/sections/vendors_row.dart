@@ -46,5 +46,4 @@ class VendorsRow extends ConsumerWidget {
   }
 }
 
-// Ré-export pour éviter d'importer AppUser partout
 typedef VendorsList = List<AppUser>;

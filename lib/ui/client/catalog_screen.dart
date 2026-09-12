@@ -15,9 +15,6 @@ class CatalogScreen extends ConsumerWidget {
     final filter = ref.watch(filterProvider);
     final categories = ref.watch(categoriesProvider);
 
-    // Le Scaffold est indispensable quand on arrive via Navigator.push.
-    // On l'ajoute toujours : en tant qu'onglet dans ClientShell, il
-    // devient transparent et laisse voir le fond du shell.
     return Scaffold(
       backgroundColor: context.background,
       appBar: Navigator.of(context).canPop()
@@ -34,7 +31,6 @@ class CatalogScreen extends ConsumerWidget {
         bottom: false,
         child: CustomScrollView(
           slivers: [
-            // ---------- TITRE (masqué si AppBar est affichée) ----------
             if (!Navigator.of(context).canPop())
               SliverToBoxAdapter(
                 child: Padding(
@@ -50,8 +46,6 @@ class CatalogScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-
-            // ---------- RECHERCHE ----------
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -70,10 +64,7 @@ class CatalogScreen extends ConsumerWidget {
                 ),
               ),
             ),
-
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-
-            // ---------- CHIPS CATÉGORIES ----------
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 40,
@@ -88,9 +79,8 @@ class CatalogScreen extends ConsumerWidget {
                     final cat = categories[i];
                     final selected = cat == filter.category;
                     return GestureDetector(
-                      onTap: () => ref
-                          .read(filterProvider.notifier)
-                          .setCategory(cat),
+                      onTap: () =>
+                          ref.read(filterProvider.notifier).setCategory(cat),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
@@ -100,8 +90,7 @@ class CatalogScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           gradient: selected ? AppColors.gradient : null,
                           color: selected ? null : context.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.lg),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                           boxShadow: selected
                               ? context.coloredShadow(AppColors.primary)
                               : context.softShadow,
@@ -110,9 +99,8 @@ class CatalogScreen extends ConsumerWidget {
                           child: Text(
                             cat,
                             style: TextStyle(
-                              color: selected
-                                  ? Colors.white
-                                  : context.onSurface,
+                              color:
+                                  selected ? Colors.white : context.onSurface,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
@@ -124,8 +112,6 @@ class CatalogScreen extends ConsumerWidget {
                 ),
               ),
             ),
-
-            // ---------- COMPTEUR + TRI ----------
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -149,8 +135,6 @@ class CatalogScreen extends ConsumerWidget {
                 ),
               ),
             ),
-
-            // ---------- GRILLE ----------
             asyncProducts.when(
               loading: () => const SliverFillRemaining(
                 child: Center(

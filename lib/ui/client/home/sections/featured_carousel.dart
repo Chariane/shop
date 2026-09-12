@@ -100,9 +100,7 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
               height: 6,
               decoration: BoxDecoration(
                 gradient: active ? AppColors.gradient : null,
-                color: active
-                    ? null
-                    : context.textMuted.withValues(alpha: 0.4),
+                color: active ? null : context.textMuted.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(3),
               ),
             );
@@ -139,8 +137,7 @@ class _SlideCard extends StatelessWidget {
             Image.network(
               slide.image,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: AppColors.primary),
+              errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
             ),
             DecoratedBox(
               decoration: BoxDecoration(

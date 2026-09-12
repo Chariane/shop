@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/animations.dart';
 import '../../../core/theme.dart';
+import '../../../data/models/product.dart';
 import '../../../providers/favorites_providers.dart';
 import '../../../providers/product_providers.dart';
 import 'sections/product_gallery.dart';
@@ -35,7 +36,7 @@ class ProductDetailScreen extends ConsumerWidget {
 }
 
 class _DetailView extends ConsumerWidget {
-  final dynamic product;
+  final Product product;
   const _DetailView({required this.product});
 
   @override
@@ -59,11 +60,28 @@ class _DetailView extends ConsumerWidget {
               icon: isFavorite
                   ? Icons.favorite_rounded
                   : Icons.favorite_border_rounded,
-              color:
-                  isFavorite ? AppColors.accent : context.onSurface,
-              onTap: () => ref
-                  .read(favoritesProvider.notifier)
-                  .toggle(product.id),
+              color: isFavorite ? AppColors.accent : context.onSurface,
+              onTap: () async {
+                final added = await ref
+                    .read(favoritesProvider.notifier)
+                    .toggle(product.id);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      added ? 'Ajouté aux favoris' : 'Retiré des favoris',
+                    ),
+                    backgroundColor:
+                        added ? AppColors.accent : context.textMuted,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(milliseconds: 1200),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    margin: const EdgeInsets.all(AppSpacing.lg),
+                  ),
+                );
+              },
             ),
             const SizedBox(width: AppSpacing.sm),
           ],
@@ -82,7 +100,10 @@ class _DetailView extends ConsumerWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, 0,
+                AppSpacing.xl,
+                AppSpacing.xxl,
+                AppSpacing.xl,
+                0,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,8 +138,7 @@ class _DetailView extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xxl),
                   FadeSlideIn(
                     delay: const Duration(milliseconds: 220),
-                    child:
-                        ProductSpecs(specs: product.specifications),
+                    child: ProductSpecs(specs: product.specifications),
                   ),
                   const SizedBox(height: 140),
                 ],

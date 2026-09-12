@@ -49,8 +49,7 @@ class _Banner extends StatelessWidget {
             child: Image.network(
               vendor.shopBannerUrl ?? '',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: AppColors.primary),
+              errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
             ),
           ),
         ),
@@ -116,7 +115,10 @@ class _Info extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md, AppSpacing.xxl, AppSpacing.md, AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xxl,
+        AppSpacing.md,
+        AppSpacing.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

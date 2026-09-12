@@ -24,7 +24,6 @@ class HomeScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: HeroHeader()),
-
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.only(top: AppSpacing.xl),
@@ -34,7 +33,6 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
-
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.only(top: AppSpacing.xxxl),
@@ -44,27 +42,23 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
-
           _section(
             title: 'Boutiques en vedette',
             delayMs: 260,
             child: const VendorsRow(),
           ),
-
           _section(
             title: 'Nouveautés',
             delayMs: 340,
             onSeeAll: () => _goToCatalog(context, ref, SortOption.newest),
             child: const ProductRow(),
           ),
-
           _section(
             title: 'Promotions',
             delayMs: 420,
             onSeeAll: () => _goToCatalog(context, ref, SortOption.priceAsc),
             child: const ProductRow(filterOnSale: true, sortByNewest: false),
           ),
-
           SliverToBoxAdapter(
             child: FadeSlideIn(
               delay: const Duration(milliseconds: 500),
@@ -123,7 +117,10 @@ class _PopularGrid extends ConsumerWidget {
     return asyncProducts.when(
       loading: () => SliverPadding(
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 120,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          AppSpacing.xl,
+          120,
         ),
         sliver: SliverGrid(
           gridDelegate: _gridDelegate,
@@ -137,11 +134,14 @@ class _PopularGrid extends ConsumerWidget {
         child: Center(child: Text('Erreur : $e')),
       ),
       data: (list) {
-        final popular = [...list]
+        final popular = list.where((p) => p.isActive).toList()
           ..sort((a, b) => b.rating.compareTo(a.rating));
         return SliverPadding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 120,
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.xl,
+            120,
           ),
           sliver: SliverGrid(
             gridDelegate: _gridDelegate,

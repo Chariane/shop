@@ -37,8 +37,7 @@ class _ProductGalleryState extends State<ProductGallery> {
           itemBuilder: (_, i) => Image.network(
             widget.images[i],
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: context.background),
+            errorBuilder: (_, __, ___) => Container(color: context.background),
           ),
         ),
         if (widget.images.length > 1)

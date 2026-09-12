@@ -53,9 +53,8 @@ class CategorySection extends ConsumerWidget {
             itemBuilder: (context, i) {
               final cat = _items[i];
               return PressableScale(
-                onTap: () => ref
-                    .read(filterProvider.notifier)
-                    .setCategory(cat.label),
+                onTap: () =>
+                    ref.read(filterProvider.notifier).setCategory(cat.label),
                 child: _CategoryCard(item: cat),
               );
             },
@@ -87,8 +86,7 @@ class _CategoryCard extends StatelessWidget {
             Image.network(
               item.image,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: AppColors.primary),
+              errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
             ),
             DecoratedBox(
               decoration: BoxDecoration(

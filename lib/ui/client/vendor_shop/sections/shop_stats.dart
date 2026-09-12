@@ -8,37 +8,39 @@ class ShopStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -24),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        child: Row(
-          children: [
-            _stat(
-              context,
-              icon: Icons.star_rounded,
-              value: vendor.shopRating.toStringAsFixed(1),
-              label: 'Note',
-              color: const Color(0xFFFFB800),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            _stat(
-              context,
-              icon: Icons.shopping_bag_rounded,
-              value: '${vendor.shopSales}',
-              label: 'Ventes',
-              color: AppColors.success,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            _stat(
-              context,
-              icon: Icons.access_time_rounded,
-              value: vendor.responseTimeLabel,
-              label: 'Réponse',
-              color: AppColors.primary,
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        0,
+      ),
+      child: Row(
+        children: [
+          _stat(
+            context,
+            icon: Icons.star_rounded,
+            value: vendor.shopRating.toStringAsFixed(1),
+            label: 'Note',
+            color: const Color(0xFFFFB800),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _stat(
+            context,
+            icon: Icons.shopping_bag_rounded,
+            value: '${vendor.shopSales}',
+            label: 'Ventes',
+            color: AppColors.success,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _stat(
+            context,
+            icon: Icons.access_time_rounded,
+            value: vendor.responseTimeLabel,
+            label: 'Réponse',
+            color: AppColors.primary,
+          ),
+        ],
       ),
     );
   }

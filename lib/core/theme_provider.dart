@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// ==========================================================
-/// [PROVIDER] Mode du thème (light / dark / system)
-/// Persisté dans SharedPreferences.
-/// ==========================================================
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const _storageKey = 'theme_mode';
 
@@ -36,7 +32,6 @@ final themeModeProvider =
   return ThemeModeNotifier();
 });
 
-/// [PROVIDER] Raccourci : sommes-nous en mode sombre ?
 final isDarkProvider = Provider<bool>((ref) {
   return ref.watch(themeModeProvider) == ThemeMode.dark;
 });

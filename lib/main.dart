@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
 import 'core/theme_provider.dart';
-import 'ui/client/client_shell.dart';
+import 'ui/auth/app_gate.dart';
 
 void main() {
   runApp(const ProviderScope(child: ShopHubApp()));
@@ -21,7 +21,7 @@ class ShopHubApp extends ConsumerWidget {
       themeMode: mode,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: const ClientShell(),
+      home: const AppGate(),
     );
   }
 }

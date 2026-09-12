@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// ==========================================================
-/// FadeSlideIn — Entrée en fondu + glissement vertical.
-/// ==========================================================
 class FadeSlideIn extends StatefulWidget {
   final Widget child;
   final Duration delay;
@@ -67,9 +64,6 @@ class _FadeSlideInState extends State<FadeSlideIn>
   }
 }
 
-/// ==========================================================
-/// PressableScale — Feedback au tap.
-/// ==========================================================
 class PressableScale extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
@@ -121,11 +115,6 @@ class _PressableScaleState extends State<PressableScale>
   }
 }
 
-/// ==========================================================
-/// SlidePageRoute — Transition de page premium :
-/// fade + léger slide depuis le bas. À utiliser partout
-/// au lieu de MaterialPageRoute pour un rendu cinématique.
-/// ==========================================================
 class SlidePageRoute<T> extends PageRouteBuilder<T> {
   final Widget child;
 

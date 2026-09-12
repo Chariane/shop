@@ -15,18 +15,125 @@ class VendorShopCard extends StatelessWidget {
         context,
         SlidePageRoute(child: VendorShopScreen(vendorId: vendor.id)),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.surface,
+      child: DecoratedBox(
+        decoration: BoxDecoration(boxShadow: context.softShadow),
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                vendor.shopBannerUrl ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: AppColors.primary),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.08),
+                      Colors.black.withValues(alpha: 0.22),
+                      Colors.black.withValues(alpha: 0.82),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+              _VerifiedBadge(isVisible: vendor.isVerified),
+              _ShopInfo(vendor: vendor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VerifiedBadge extends StatelessWidget {
+  final bool isVisible;
+
+  const _VerifiedBadge({required this.isVisible});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isVisible) return const SizedBox.shrink();
+
+    return Positioned(
+      right: AppSpacing.sm,
+      top: AppSpacing.sm,
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
           boxShadow: context.softShadow,
         ),
+        child: const Icon(
+          Icons.verified_rounded,
+          color: AppColors.primary,
+          size: 15,
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopInfo extends StatelessWidget {
+  final AppUser vendor;
+  const _ShopInfo({required this.vendor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: AppSpacing.md,
+      right: AppSpacing.md,
+      bottom: AppSpacing.md,
+      child: DefaultTextStyle(
+        style: const TextStyle(color: Colors.white),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ⚡ FIX : flex 4 → 5 pour donner plus de place aux infos
-            Expanded(flex: 5, child: _Banner(vendor: vendor)),
-            Expanded(flex: 5, child: _Info(vendor: vendor)),
+            Text(
+              vendor.shopName ?? vendor.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              vendor.shopTagline ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.82),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _MetricPill(
+                  icon: Icons.star_rounded,
+                  label: vendor.shopRating.toStringAsFixed(1),
+                  iconColor: const Color(0xFFFFC145),
+                ),
+                _MetricPill(
+                  icon: Icons.shopping_bag_rounded,
+                  label: '${vendor.shopSales} ventes',
+                  iconColor: Colors.white,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -34,133 +141,41 @@ class VendorShopCard extends StatelessWidget {
   }
 }
 
-class _Banner extends StatelessWidget {
-  final AppUser vendor;
-  const _Banner({required this.vendor});
+class _MetricPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color iconColor;
+
+  const _MetricPill({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.lg),
-            ),
-            child: Image.network(
-              vendor.shopBannerUrl ?? '',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Container(color: AppColors.primary),
-            ),
-          ),
-        ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.5),
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          left: AppSpacing.md,
-          bottom: -20,
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: context.surface, width: 3),
-            ),
-            child: CircleAvatar(
-              radius: 22,
-              backgroundImage: vendor.avatarUrl != null
-                  ? NetworkImage(vendor.avatarUrl!)
-                  : null,
-              child: vendor.avatarUrl == null
-                  ? const Icon(Icons.storefront_rounded)
-                  : null,
-            ),
-          ),
-        ),
-        if (vendor.isVerified)
-          Positioned(
-            right: AppSpacing.sm,
-            top: AppSpacing.sm,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: context.softShadow,
-              ),
-              child: const Icon(
-                Icons.verified_rounded,
-                color: AppColors.primary,
-                size: 14,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Info extends StatelessWidget {
-  final AppUser vendor;
-  const _Info({required this.vendor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // ⚡ FIX : padding top 24 → 20, bottom 8 → 10
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md, AppSpacing.xl, AppSpacing.md, AppSpacing.sm + 2,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 5,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, color: iconColor, size: 13),
+          const SizedBox(width: 4),
           Text(
-            vendor.shopName ?? vendor.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: context.onSurface,
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            vendor.shopTagline ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: context.textMuted),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              const Icon(Icons.star_rounded, color: Color(0xFFFFB800), size: 14),
-              const SizedBox(width: 2),
-              Text(
-                vendor.shopRating.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.onSurface,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Icon(Icons.shopping_bag_rounded, size: 12, color: context.textMuted),
-              const SizedBox(width: 2),
-              Text(
-                '${vendor.shopSales} ventes',
-                style: TextStyle(fontSize: 11, color: context.textMuted),
-              ),
-            ],
           ),
         ],
       ),

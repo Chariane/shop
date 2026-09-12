@@ -9,7 +9,7 @@ class ShopAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: 260,
       pinned: true,
       backgroundColor: context.surface,
       leading: Padding(
@@ -47,8 +47,10 @@ class ShopAppBar extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.25),
                     Colors.black.withValues(alpha: 0.7),
                   ],
+                  stops: const [0.0, 0.55, 1.0],
                 ),
               ),
             ),
