@@ -1,14 +1,20 @@
+import '../../core/currency.dart';
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
+import '../../core/providers/core_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
-import '../../data/models/app_user.dart';
-import '../../data/models/product.dart';
-import '../../data/models/vendor_order.dart';
+import 'package:shophub/domain/entities/app_user.dart';
+import 'package:shophub/domain/entities/product.dart';
+import 'package:shophub/domain/entities/vendor_order.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/product_providers.dart';
 import '../../providers/user_providers.dart';
 import '../../providers/vendor_order_providers.dart';
+import '../client/home/home_screen.dart';
 
 class VendorShell extends ConsumerStatefulWidget {
   const VendorShell({super.key});
@@ -23,6 +29,7 @@ class _VendorShellState extends ConsumerState<VendorShell> {
   @override
   Widget build(BuildContext context) {
     final vendor = ref.watch(authProvider);
+    final demoMode = ref.watch(isDemoModeProvider);
 
     if (vendor == null) {
       return const Scaffold(
@@ -34,16 +41,33 @@ class _VendorShellState extends ConsumerState<VendorShell> {
       _VendorDashboard(
         vendor: vendor,
         onShowOrders: () => setState(() => _index = 2),
+        onExplore: () => setState(() => _index = 3),
       ),
       _VendorProducts(vendor: vendor),
       _VendorOrders(vendor: vendor),
+      _VendorMarketplace(vendor: vendor),
       _VendorProfile(vendor: vendor),
     ];
 
     return Scaffold(
       backgroundColor: context.background,
       appBar: AppBar(
-        title: Text(vendor.shopName ?? 'Espace vendeur'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(vendor.shopName ?? 'Espace vendeur'),
+            Text(
+              _index == 3
+                  ? 'EXPLORATION · RESPONSABLE CONNECTÉ'
+                  : 'ESPACE RESPONSABLE',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: context.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Déconnexion',
@@ -52,7 +76,22 @@ class _VendorShellState extends ConsumerState<VendorShell> {
           ),
         ],
       ),
-      body: SafeArea(child: pages[_index]),
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (demoMode)
+              Container(
+                width: double.infinity,
+                color: AppColors.warning.withValues(alpha: 0.2),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                child: const Text(
+                    'Mode démo hors ligne : les modifications ne sont pas enregistrées.'),
+              ),
+            Expanded(child: pages[_index]),
+          ],
+        ),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
@@ -73,9 +112,14 @@ class _VendorShellState extends ConsumerState<VendorShell> {
             label: 'Commandes',
           ),
           NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore_rounded),
+            label: 'Explorer',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.storefront_outlined),
             selectedIcon: Icon(Icons.storefront_rounded),
-            label: 'Boutique',
+            label: 'Ma boutique',
           ),
         ],
       ),
@@ -86,10 +130,12 @@ class _VendorShellState extends ConsumerState<VendorShell> {
 class _VendorDashboard extends ConsumerWidget {
   final AppUser vendor;
   final VoidCallback onShowOrders;
+  final VoidCallback onExplore;
 
   const _VendorDashboard({
     required this.vendor,
     required this.onShowOrders,
+    required this.onExplore,
   });
 
   @override
@@ -137,6 +183,15 @@ class _VendorDashboard extends ConsumerWidget {
         return _VendorPage(
           children: [
             _ShopHero(vendor: vendor),
+            _SectionCard(
+              title: 'Explorer ShopHub',
+              actionLabel: 'Découvrir',
+              onAction: onExplore,
+              child: Text(
+                'Parcourez les produits et les boutiques comme un visiteur, tout en restant connecté à ${vendor.shopName ?? 'votre espace vendeur'}.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -165,7 +220,7 @@ class _VendorDashboard extends ConsumerWidget {
                 ),
                 _MetricCard(
                   label: 'Chiffre estimé',
-                  value: '${revenue.toStringAsFixed(0)} €',
+                  value: '${formatCfa(revenue)}',
                   icon: Icons.payments_rounded,
                   color: AppColors.accent,
                 ),
@@ -273,6 +328,61 @@ class _VendorDashboard extends ConsumerWidget {
     final entries = totals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return entries.first.key;
+  }
+}
+
+class _VendorMarketplace extends StatelessWidget {
+  final AppUser vendor;
+
+  const _VendorMarketplace({required this.vendor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          color: context.surface,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.md,
+            AppSpacing.xl,
+            AppSpacing.lg,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child:
+                    const Icon(Icons.explore_rounded, color: AppColors.primary),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Découvrez la plateforme',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Aperçu visiteur · ${vendor.shopName ?? 'Votre boutique'} reste connectée',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Expanded(child: HomeScreen()),
+      ],
+    );
   }
 }
 
@@ -683,19 +793,31 @@ class _VendorProductTile extends ConsumerWidget {
                       ),
                     ),
                     PopupMenuButton<String>(
-                      onSelected: (value) {
+                      onSelected: (value) async {
                         if (value == 'edit') {
                           _openProductForm(context, ref, vendor, product);
-                        } else {
-                          ref
-                              .read(productsProvider.notifier)
-                              .toggleProductVisibility(product.id);
-                          _showVendorFeedback(
-                            context,
-                            product.isActive
-                                ? 'Produit masqué côté client'
-                                : 'Produit publié côté client',
-                          );
+                          return;
+                        }
+                        try {
+                          await ref.read(productsProvider.notifier).saveProduct(
+                                product.copyWith(isActive: !product.isActive),
+                                isNew: false,
+                              );
+                          if (context.mounted) {
+                            _showVendorFeedback(
+                                context,
+                                product.isActive
+                                    ? 'Produit masqué côté client'
+                                    : 'Produit publié côté client');
+                          }
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(error.toString()),
+                                  backgroundColor: AppColors.danger),
+                            );
+                          }
                         }
                       },
                       itemBuilder: (context) => [
@@ -725,7 +847,7 @@ class _VendorProductTile extends ConsumerWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      '${product.price.toStringAsFixed(2)} €',
+                      '${formatCfa(product.price)}',
                       style: TextStyle(
                         color: context.onSurface,
                         fontWeight: FontWeight.w800,
@@ -750,14 +872,27 @@ class _VendorProductTile extends ConsumerWidget {
                       tooltip: 'Retirer du stock',
                       onPressed: product.stock <= 0
                           ? null
-                          : () {
-                              ref
-                                  .read(productsProvider.notifier)
-                                  .updateStock(product.id, product.stock - 1);
-                              _showVendorFeedback(
-                                context,
-                                'Stock mis à jour',
-                              );
+                          : () async {
+                              try {
+                                await ref
+                                    .read(productsProvider.notifier)
+                                    .saveProduct(
+                                      product.copyWith(
+                                          stock: product.stock - 1),
+                                      isNew: false,
+                                    );
+                                if (context.mounted)
+                                  _showVendorFeedback(
+                                      context, 'Stock mis à jour');
+                              } catch (error) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(error.toString()),
+                                        backgroundColor: AppColors.danger),
+                                  );
+                                }
+                              }
                             },
                     ),
                     Padding(
@@ -772,11 +907,23 @@ class _VendorProductTile extends ConsumerWidget {
                     _SmallIconButton(
                       icon: Icons.add_rounded,
                       tooltip: 'Ajouter au stock',
-                      onPressed: () {
-                        ref
-                            .read(productsProvider.notifier)
-                            .updateStock(product.id, product.stock + 1);
-                        _showVendorFeedback(context, 'Stock mis à jour');
+                      onPressed: () async {
+                        try {
+                          await ref.read(productsProvider.notifier).saveProduct(
+                                product.copyWith(stock: product.stock + 1),
+                                isNew: false,
+                              );
+                          if (context.mounted)
+                            _showVendorFeedback(context, 'Stock mis à jour');
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text(error.toString()),
+                                  backgroundColor: AppColors.danger),
+                            );
+                          }
+                        }
                       },
                     ),
                   ],
@@ -842,7 +989,7 @@ class _VendorOrderTile extends ConsumerWidget {
           _InfoLine(
             icon: Icons.payments_rounded,
             label: 'Total',
-            value: '${order.total.toStringAsFixed(2)} €',
+            value: '${formatCfa(order.total)}',
           ),
           const SizedBox(height: AppSpacing.md),
           Row(
@@ -859,14 +1006,23 @@ class _VendorOrderTile extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: isDelivered
                       ? null
-                      : () {
-                          ref
-                              .read(vendorOrdersProvider.notifier)
-                              .advance(order.id);
-                          _showVendorFeedback(
-                            context,
-                            'Statut de commande mis à jour',
-                          );
+                      : () async {
+                          try {
+                            await ref
+                                .read(vendorOrdersProvider.notifier)
+                                .advance(order.id);
+                            if (context.mounted)
+                              _showVendorFeedback(
+                                  context, 'Statut de commande mis à jour');
+                          } catch (error) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(error.toString()),
+                                    backgroundColor: AppColors.danger),
+                              );
+                            }
+                          }
                         },
                   icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: const Text('Avancer'),
@@ -909,12 +1065,24 @@ class _VendorOrderTile extends ConsumerWidget {
                         : Icons.radio_button_off_rounded,
                   ),
                   title: Text(status.label),
-                  onTap: () {
-                    ref
-                        .read(vendorOrdersProvider.notifier)
-                        .updateStatus(order.id, status);
-                    Navigator.pop(sheetContext);
-                    _showVendorFeedback(context, 'Statut modifié');
+                  onTap: () async {
+                    try {
+                      await ref
+                          .read(vendorOrdersProvider.notifier)
+                          .updateStatus(order.id, status);
+                      if (!sheetContext.mounted) return;
+                      Navigator.pop(sheetContext);
+                      if (context.mounted)
+                        _showVendorFeedback(context, 'Statut modifié');
+                    } catch (error) {
+                      if (sheetContext.mounted) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          SnackBar(
+                              content: Text(error.toString()),
+                              backgroundColor: AppColors.danger),
+                        );
+                      }
+                    }
                   },
                 ),
             ],
@@ -965,7 +1133,7 @@ class _OrderMiniTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${order.total.toStringAsFixed(0)} €',
+            '${formatCfa(order.total)}',
             style: TextStyle(
               color: context.onSurface,
               fontWeight: FontWeight.w800,
@@ -1148,15 +1316,18 @@ Future<void> _openProductForm(
     builder: (context) => _ProductFormSheet(
       vendor: vendor,
       product: product,
-      onSave: (savedProduct) {
-        final notifier = ref.read(productsProvider.notifier);
-        if (product == null) {
-          notifier.addProduct(savedProduct);
-          _showVendorFeedback(context, 'Produit ajouté au catalogue');
-        } else {
-          notifier.updateProduct(savedProduct);
-          _showVendorFeedback(context, 'Produit mis à jour');
-        }
+      onPickImages: (files) =>
+          ref.read(marketplaceApiProvider).uploadProductImages(files),
+      onSave: (savedProduct) async {
+        await ref
+            .read(productsProvider.notifier)
+            .saveProduct(savedProduct, isNew: product == null);
+        if (context.mounted)
+          _showVendorFeedback(
+              context,
+              product == null
+                  ? 'Produit ajouté au catalogue'
+                  : 'Produit mis à jour');
       },
     ),
   );
@@ -1173,20 +1344,23 @@ Future<void> _openShopForm(
     showDragHandle: true,
     builder: (context) => _ShopFormSheet(
       vendor: vendor,
-      onSave: (updatedVendor) {
-        ref.read(authProvider.notifier).updateShopProfile(
-              shopName: updatedVendor.shopName ?? updatedVendor.name,
-              shopTagline: updatedVendor.shopTagline ?? '',
-              shopDescription: updatedVendor.shopDescription ?? '',
-              shopBannerUrl: updatedVendor.shopBannerUrl ?? '',
-              shopCity: updatedVendor.shopCity ?? '',
-              shopCountry: updatedVendor.shopCountry ?? '',
-              shopCategories: updatedVendor.shopCategories,
-            );
-        ref.read(vendorsProvider.notifier).upsertVendor(updatedVendor);
+      onUploadBanner: (file) =>
+          ref.read(marketplaceApiProvider).uploadProfileImage(file),
+      onSave: (updatedVendor) async {
+        final savedVendor =
+            await ref.read(authProvider.notifier).updateShopProfile(
+                  shopName: updatedVendor.shopName ?? updatedVendor.name,
+                  shopTagline: updatedVendor.shopTagline ?? '',
+                  shopDescription: updatedVendor.shopDescription ?? '',
+                  shopBannerUrl: updatedVendor.shopBannerUrl ?? '',
+                  shopCity: updatedVendor.shopCity ?? '',
+                  shopCountry: updatedVendor.shopCountry ?? '',
+                  shopCategories: updatedVendor.shopCategories,
+                );
+        ref.read(vendorsProvider.notifier).upsertVendor(savedVendor);
         ref.read(productsProvider.notifier).renameVendorProducts(
               vendorId: vendor.id,
-              vendorName: updatedVendor.shopName ?? updatedVendor.name,
+              vendorName: savedVendor.shopName ?? savedVendor.name,
             );
         _showVendorFeedback(context, 'Profil boutique mis à jour');
       },
@@ -1212,12 +1386,14 @@ void _showVendorFeedback(BuildContext context, String message) {
 class _ProductFormSheet extends StatefulWidget {
   final AppUser vendor;
   final Product? product;
-  final ValueChanged<Product> onSave;
+  final Future<void> Function(Product) onSave;
+  final Future<List<String>> Function(List<XFile>) onPickImages;
 
   const _ProductFormSheet({
     required this.vendor,
     required this.product,
     required this.onSave,
+    required this.onPickImages,
   });
 
   @override
@@ -1226,11 +1402,14 @@ class _ProductFormSheet extends StatefulWidget {
 
 class _ProductFormSheetState extends State<_ProductFormSheet> {
   final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
   late final TextEditingController _nameController;
   late final TextEditingController _shortDescriptionController;
   late final TextEditingController _longDescriptionController;
   late final TextEditingController _priceController;
-  late final TextEditingController _imageController;
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<XFile> _pendingImages = [];
+  late List<String> _savedImages;
   late final TextEditingController _stockController;
   late String _category;
   late bool _freeShipping;
@@ -1249,17 +1428,14 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
       text: product?.longDescription ?? '',
     );
     _priceController = TextEditingController(
-      text: product == null ? '' : product.price.toStringAsFixed(2),
+      text: product == null ? '' : product.price.round().toString(),
     );
-    _imageController = TextEditingController(
-      text: product?.imageUrl ??
-          'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&q=80',
-    );
+    _savedImages = product?.allImages ?? const [];
     _stockController = TextEditingController(
       text: product == null ? '10' : product.stock.toString(),
     );
-    _category = product?.category ??
-        (categories.isEmpty ? 'Boutique' : categories.first);
+    _category =
+        product?.category ?? (categories.isEmpty ? 'Autre' : categories.first);
     _freeShipping = product?.freeShipping ?? true;
     _isActive = product?.isActive ?? true;
   }
@@ -1270,7 +1446,6 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     _shortDescriptionController.dispose();
     _longDescriptionController.dispose();
     _priceController.dispose();
-    _imageController.dispose();
     _stockController.dispose();
     super.dispose();
   }
@@ -1280,10 +1455,6 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     final categories = {
       ...widget.vendor.shopCategories,
       _category,
-      'Boutique',
-      'Tech',
-      'Mode',
-      'Maison',
     }.toList();
 
     return SafeArea(
@@ -1328,7 +1499,7 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                     Expanded(
                       child: _FormField(
                         controller: _priceController,
-                        label: 'Prix',
+                        label: 'Prix (FCFA)',
                         keyboardType: TextInputType.number,
                         validator: _required,
                       ),
@@ -1361,11 +1532,21 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                     },
                   ),
                 ),
-                _FormField(
-                  controller: _imageController,
-                  label: 'Image du produit',
-                  validator: _required,
+                _ProductImagePicker(
+                  savedImages: _savedImages,
+                  pendingImages: _pendingImages,
+                  onPick: _pickImages,
+                  onRemoveSaved: (index) =>
+                      setState(() => _savedImages.removeAt(index)),
+                  onRemovePending: (index) =>
+                      setState(() => _pendingImages.removeAt(index)),
                 ),
+                if (_savedImages.isEmpty && _pendingImages.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Text('Ajoutez au moins une image.',
+                        style: TextStyle(color: AppColors.danger)),
+                  ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _isActive,
@@ -1382,8 +1563,13 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.check_rounded),
+                    onPressed: _saving ? null : _save,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.check_rounded),
                     label: const Text('Enregistrer'),
                   ),
                 ),
@@ -1395,6 +1581,18 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     );
   }
 
+  Future<void> _pickImages() async {
+    final available = 5 - _savedImages.length - _pendingImages.length;
+    if (available <= 0) return;
+    final files = await _imagePicker.pickMultiImage(
+      imageQuality: 85,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (!mounted || files.isEmpty) return;
+    setState(() => _pendingImages.addAll(files.take(available)));
+  }
+
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Champ obligatoire';
@@ -1402,11 +1600,17 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
     return null;
   }
 
-  void _save() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<void> _save() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
+    if (_savedImages.isEmpty && _pendingImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ajoutez au moins une image.')));
+      return;
+    }
 
     final price =
-        double.tryParse(_priceController.text.replaceAll(',', '.')) ?? 0;
+        (double.tryParse(_priceController.text.replaceAll(',', '.')) ?? 0)
+            .roundToDouble();
     final stock = int.tryParse(_stockController.text) ?? 0;
     final product = widget.product;
 
@@ -1419,12 +1623,14 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
             shortDescription: _shortDescriptionController.text.trim(),
             longDescription: _longDescriptionController.text.trim(),
             price: price,
-            imageUrl: _imageController.text.trim(),
+            imageUrl: _savedImages.isEmpty ? '' : _savedImages.first,
+            gallery:
+                _savedImages.length > 1 ? _savedImages.sublist(1) : const [],
             category: _category,
             stock: stock,
             isActive: _isActive,
             freeShipping: _freeShipping,
-            tags: const ['Boutique'],
+            tags: const [],
             createdAt: DateTime.now(),
           )
         : product.copyWith(
@@ -1433,30 +1639,157 @@ class _ProductFormSheetState extends State<_ProductFormSheet> {
             shortDescription: _shortDescriptionController.text.trim(),
             longDescription: _longDescriptionController.text.trim(),
             price: price,
-            imageUrl: _imageController.text.trim(),
+            imageUrl: _savedImages.isEmpty ? '' : _savedImages.first,
+            gallery:
+                _savedImages.length > 1 ? _savedImages.sublist(1) : const [],
             category: _category,
             stock: stock,
             isActive: _isActive,
             freeShipping: _freeShipping,
           );
 
-    widget.onSave(savedProduct);
-    Navigator.pop(context);
+    setState(() => _saving = true);
+    try {
+      final uploaded = await widget.onPickImages(_pendingImages);
+      final images = [..._savedImages, ...uploaded];
+      final readyProduct = savedProduct.copyWith(
+        imageUrl: images.first,
+        gallery: images.skip(1).toList(),
+      );
+      await widget.onSave(readyProduct);
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(error.toString()), backgroundColor: AppColors.danger),
+      );
+    }
   }
+}
+
+class _ProductImagePicker extends StatelessWidget {
+  final List<String> savedImages;
+  final List<XFile> pendingImages;
+  final VoidCallback onPick;
+  final ValueChanged<int> onRemoveSaved;
+  final ValueChanged<int> onRemovePending;
+
+  const _ProductImagePicker({
+    required this.savedImages,
+    required this.pendingImages,
+    required this.onPick,
+    required this.onRemoveSaved,
+    required this.onRemovePending,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = savedImages.length + pendingImages.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Text('Photos du produit')),
+            Text('$count/5', style: TextStyle(color: context.textMuted)),
+            IconButton(
+              tooltip: 'Ajouter des photos',
+              onPressed: count >= 5 ? null : onPick,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+            ),
+          ],
+        ),
+        if (count > 0)
+          SizedBox(
+            height: 92,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (var i = 0; i < savedImages.length; i++)
+                  _ImageThumbnail(
+                    child: Image.network(savedImages[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.broken_image_outlined)),
+                    onRemove: () => onRemoveSaved(i),
+                  ),
+                for (var i = 0; i < pendingImages.length; i++)
+                  _ImageThumbnail(
+                    child: FutureBuilder(
+                      future: pendingImages[i].readAsBytes(),
+                      builder: (context, snapshot) => snapshot.hasData
+                          ? Image.memory(snapshot.data!, fit: BoxFit.cover)
+                          : const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                    onRemove: () => onRemovePending(i),
+                  ),
+              ],
+            ),
+          ),
+        const Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.md),
+          child: Text('Jusqu’à 5 images, 5 Mo maximum chacune.',
+              style: TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+}
+
+class _ImageThumbnail extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onRemove;
+  const _ImageThumbnail({required this.child, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 84,
+        height: 84,
+        margin: const EdgeInsets.only(right: AppSpacing.sm),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
+        child: Stack(fit: StackFit.expand, children: [
+          child,
+          Positioned(
+              top: 2,
+              right: 2,
+              child: IconButton.filledTonal(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Retirer cette image',
+                onPressed: onRemove,
+                icon: const Icon(Icons.close, size: 16),
+              )),
+        ]),
+      );
 }
 
 class _ShopFormSheet extends StatefulWidget {
   final AppUser vendor;
-  final ValueChanged<AppUser> onSave;
+  final Future<String> Function(XFile file) onUploadBanner;
+  final Future<void> Function(AppUser) onSave;
 
-  const _ShopFormSheet({required this.vendor, required this.onSave});
+  const _ShopFormSheet({
+    required this.vendor,
+    required this.onUploadBanner,
+    required this.onSave,
+  });
 
   @override
   State<_ShopFormSheet> createState() => _ShopFormSheetState();
 }
 
+final ImagePicker _imagePicker = ImagePicker();
+XFile? _selectedBanner;
+Uint8List? _bannerBytes;
+
 class _ShopFormSheetState extends State<_ShopFormSheet> {
   final _formKey = GlobalKey<FormState>();
+  bool _saving = false;
   late final TextEditingController _nameController;
   late final TextEditingController _taglineController;
   late final TextEditingController _descriptionController;
@@ -1475,12 +1808,11 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     _descriptionController =
         TextEditingController(text: vendor.shopDescription ?? '');
     _bannerController = TextEditingController(
-      text: vendor.shopBannerUrl ??
-          'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=80',
+      text: vendor.shopBannerUrl ?? '',
     );
-    _cityController = TextEditingController(text: vendor.shopCity ?? 'Cotonou');
+    _cityController = TextEditingController(text: vendor.shopCity ?? '');
     _countryController = TextEditingController(
-      text: vendor.shopCountry ?? 'Bénin',
+      text: vendor.shopCountry ?? '',
     );
     _categoriesController = TextEditingController(
       text: vendor.shopCategories.join(', '),
@@ -1528,26 +1860,20 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 _FormField(
                   controller: _taglineController,
                   label: 'Phrase d’accroche',
-                  validator: _required,
+                  validator: null,
                 ),
                 _FormField(
                   controller: _descriptionController,
                   label: 'Présentation',
                   maxLines: 5,
-                  validator: _required,
                 ),
-                _FormField(
-                  controller: _bannerController,
-                  label: 'Image de couverture',
-                  validator: _required,
-                ),
+                _bannerPicker(),
                 Row(
                   children: [
                     Expanded(
                       child: _FormField(
                         controller: _cityController,
                         label: 'Ville',
-                        validator: _required,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -1555,7 +1881,6 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                       child: _FormField(
                         controller: _countryController,
                         label: 'Pays',
-                        validator: _required,
                       ),
                     ),
                   ],
@@ -1563,14 +1888,18 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
                 _FormField(
                   controller: _categoriesController,
                   label: 'Catégories',
-                  validator: _required,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.check_rounded),
+                    onPressed: _saving ? null : _save,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.check_rounded),
                     label: const Text('Enregistrer'),
                   ),
                 ),
@@ -1582,6 +1911,71 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     );
   }
 
+  Widget _bannerPicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Couverture de la boutique',
+              style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: AppSpacing.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: SizedBox(
+              width: double.infinity,
+              height: 132,
+              child: _bannerBytes != null
+                  ? Image.memory(_bannerBytes!, fit: BoxFit.cover)
+                  : _bannerController.text.isNotEmpty
+                      ? Image.network(
+                          _bannerController.text,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _bannerPlaceholder(),
+                        )
+                      : _bannerPlaceholder(),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            onPressed: _pickBanner,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: Text(_selectedBanner == null
+                ? 'Choisir une photo'
+                : 'Changer la photo'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bannerPlaceholder() => Container(
+        color: context.surface,
+        alignment: Alignment.center,
+        child:
+            Icon(Icons.storefront_outlined, color: context.textMuted, size: 34),
+      );
+
+  Future<void> _pickBanner() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La photo doit faire 5 Mo maximum.')),
+      );
+      return;
+    }
+    setState(() {
+      _selectedBanner = file;
+      _bannerBytes = bytes;
+    });
+  }
+
   String? _required(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Champ obligatoire';
@@ -1589,8 +1983,8 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
     return null;
   }
 
-  void _save() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  Future<void> _save() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
 
     final categories = _categoriesController.text
         .split(',')
@@ -1598,18 +1992,31 @@ class _ShopFormSheetState extends State<_ShopFormSheet> {
         .where((category) => category.isNotEmpty)
         .toList();
 
-    widget.onSave(
-      widget.vendor.copyWith(
-        shopName: _nameController.text.trim(),
-        shopTagline: _taglineController.text.trim(),
-        shopDescription: _descriptionController.text.trim(),
-        shopBannerUrl: _bannerController.text.trim(),
-        shopCity: _cityController.text.trim(),
-        shopCountry: _countryController.text.trim(),
-        shopCategories: categories,
-      ),
-    );
-    Navigator.pop(context);
+    setState(() => _saving = true);
+    try {
+      final bannerUrl = _selectedBanner == null
+          ? _bannerController.text.trim()
+          : await widget.onUploadBanner(_selectedBanner!);
+      await widget.onSave(
+        widget.vendor.copyWith(
+          shopName: _nameController.text.trim(),
+          shopTagline: _taglineController.text.trim(),
+          shopDescription: _descriptionController.text.trim(),
+          shopBannerUrl: bannerUrl,
+          shopCity: _cityController.text.trim(),
+          shopCountry: _countryController.text.trim(),
+          shopCategories: categories,
+        ),
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(error.toString()), backgroundColor: AppColors.danger),
+      );
+    }
   }
 }
 

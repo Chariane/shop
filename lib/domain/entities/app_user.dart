@@ -6,6 +6,7 @@ class AppUser {
   final String email;
   final UserRole role;
   final String? avatarUrl;
+  final DateTime? createdAt;
 
   final String? shopName;
   final String? shopTagline;
@@ -28,6 +29,7 @@ class AppUser {
     required this.email,
     required this.role,
     this.avatarUrl,
+    this.createdAt,
     this.shopName,
     this.shopTagline,
     this.shopDescription,
@@ -73,6 +75,7 @@ class AppUser {
       email: email ?? this.email,
       role: role,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      createdAt: createdAt,
       shopName: shopName ?? this.shopName,
       shopTagline: shopTagline ?? this.shopTagline,
       shopDescription: shopDescription ?? this.shopDescription,

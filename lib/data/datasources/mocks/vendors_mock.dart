@@ -1,4 +1,4 @@
-import '../../models/app_user.dart';
+import 'package:shophub/domain/entities/app_user.dart';
 
 abstract final class VendorsMock {
   static const vendor1 = AppUser(

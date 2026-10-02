@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme.dart';
-import '../../../../data/models/app_user.dart';
+import 'package:shophub/domain/entities/app_user.dart';
 
 class ShopAppBar extends StatelessWidget {
   final AppUser vendor;

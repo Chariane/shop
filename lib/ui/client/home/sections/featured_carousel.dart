@@ -1,40 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../domain/entities/platform_config.dart';
+import '../../../../providers/platform_config_provider.dart';
 import '../../../../core/theme.dart';
 
-class FeaturedCarousel extends StatefulWidget {
+class FeaturedCarousel extends ConsumerStatefulWidget {
   const FeaturedCarousel({super.key});
 
   @override
-  State<FeaturedCarousel> createState() => _FeaturedCarouselState();
+  ConsumerState<FeaturedCarousel> createState() => _FeaturedCarouselState();
 }
 
-class _FeaturedCarouselState extends State<FeaturedCarousel> {
+class _FeaturedCarouselState extends ConsumerState<FeaturedCarousel> {
   late final PageController _controller;
   int _currentPage = 0;
-
-  static const _slides = [
-    _Slide(
-      tag: 'Tech',
-      title: 'Tech qui change\nle quotidien',
-      subtitle: 'Sélection premium',
-      image:
-          'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
-    ),
-    _Slide(
-      tag: 'Mode',
-      title: 'Style urbain,\nattitude libre',
-      subtitle: 'Nouvelle collection',
-      image:
-          'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=80',
-    ),
-    _Slide(
-      tag: 'Maison',
-      title: 'Votre intérieur\nmérite mieux',
-      subtitle: 'Design scandinave',
-      image:
-          'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=80',
-    ),
-  ];
 
   @override
   void initState() {
@@ -46,7 +25,9 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
   void _autoScroll() {
     Future.delayed(const Duration(seconds: 4), () {
       if (!mounted) return;
-      final next = (_currentPage + 1) % _slides.length;
+      final slideCount = ref.read(platformConfigProvider).featuredSlides.length;
+      if (slideCount < 2) return;
+      final next = (_currentPage + 1) % slideCount;
       _controller.animateToPage(
         next,
         duration: const Duration(milliseconds: 700),
@@ -64,13 +45,15 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final slides = ref.watch(platformConfigProvider).featuredSlides;
+    if (slides.isEmpty) return const SizedBox.shrink();
     return Column(
       children: [
         SizedBox(
           height: 190,
           child: PageView.builder(
             controller: _controller,
-            itemCount: _slides.length,
+            itemCount: slides.length,
             onPageChanged: (i) => setState(() => _currentPage = i),
             itemBuilder: (context, i) {
               return AnimatedBuilder(
@@ -83,7 +66,7 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
                   final scale = (1 - (delta.abs() * 0.08)).clamp(0.9, 1.0);
                   return Transform.scale(scale: scale, child: child);
                 },
-                child: _SlideCard(slide: _slides[i]),
+                child: _SlideCard(slide: slides[i]),
               );
             },
           ),
@@ -91,7 +74,7 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
         const SizedBox(height: AppSpacing.lg),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_slides.length, (i) {
+          children: List.generate(slides.length, (i) {
             final active = i == _currentPage;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
@@ -111,18 +94,8 @@ class _FeaturedCarouselState extends State<FeaturedCarousel> {
   }
 }
 
-class _Slide {
-  final String tag, title, subtitle, image;
-  const _Slide({
-    required this.tag,
-    required this.title,
-    required this.subtitle,
-    required this.image,
-  });
-}
-
 class _SlideCard extends StatelessWidget {
-  final _Slide slide;
+  final FeaturedSlideConfig slide;
   const _SlideCard({required this.slide});
 
   @override
@@ -135,7 +108,7 @@ class _SlideCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.network(
-              slide.image,
+              slide.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
             ),

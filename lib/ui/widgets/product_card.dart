@@ -1,8 +1,9 @@
+import '../../core/currency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/animations.dart';
 import '../../core/theme.dart';
-import '../../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 import '../../providers/cart_providers.dart';
 import '../../providers/favorites_providers.dart';
 
@@ -172,7 +173,7 @@ class ProductCard extends ConsumerWidget {
                             children: [
                               if (product.isOnSale)
                                 Text(
-                                  '${product.originalPrice!.toStringAsFixed(2)} €',
+                                  '${formatCfa(product.originalPrice!)}',
                                   style: TextStyle(
                                     fontSize: 9,
                                     color: context.textMuted,
@@ -180,7 +181,7 @@ class ProductCard extends ConsumerWidget {
                                   ),
                                 ),
                               Text(
-                                '${product.price.toStringAsFixed(2)} €',
+                                '${formatCfa(product.price)}',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,

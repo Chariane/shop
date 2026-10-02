@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme.dart';
-import '../../../data/models/app_notification.dart';
+import 'package:shophub/domain/entities/app_notification.dart';
 import '../../../providers/notification_providers.dart';
 
 class NotificationsScreen extends ConsumerWidget {

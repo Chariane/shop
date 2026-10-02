@@ -1,0 +1,46 @@
+import { AuthUseCases } from './application/auth-use-cases';
+import { CatalogUseCases } from './application/catalog-use-cases';
+import { OrderUseCases } from './application/order-use-cases';
+import { env } from './config/env';
+import { prisma } from './infrastructure/database/prisma-client';
+import {
+  PrismaAuthRepository,
+  PrismaCatalogRepository,
+  PrismaOrdersRepository,
+} from './infrastructure/database/prisma-repositories';
+import {
+  BcryptPasswordHasher,
+  JwtTokenService,
+} from './infrastructure/security/security-services';
+import { createHttpApp } from './presentation/http/app';
+
+const tokens = new JwtTokenService();
+const auth = new AuthUseCases(
+  new PrismaAuthRepository(prisma),
+  new BcryptPasswordHasher(),
+  tokens,
+);
+const catalog = new CatalogUseCases(new PrismaCatalogRepository(prisma));
+const orders = new OrderUseCases(new PrismaOrdersRepository(prisma));
+
+const app = createHttpApp({
+  auth,
+  catalog,
+  orders,
+  tokens,
+  corsOrigin: env.corsOrigin,
+  checkDatabase: async () => {
+    await prisma.$queryRaw`SELECT 1`;
+  },
+});
+
+const server = app.listen(env.port, () => {
+  console.log(`ShopHub API disponible sur http://localhost:${env.port}`);
+});
+
+async function shutdown() {
+  server.close();
+  await prisma.$disconnect();
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

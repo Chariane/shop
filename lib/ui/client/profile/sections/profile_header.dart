@@ -4,7 +4,7 @@ import '../../../../core/theme.dart';
 class ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
-  final String avatarUrl;
+  final String? avatarUrl;
   final String memberSince;
   final bool isVerified;
   final VoidCallback onEdit;
@@ -39,7 +39,13 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 34,
-                  backgroundImage: NetworkImage(avatarUrl),
+                  backgroundImage: avatarUrl == null || avatarUrl!.isEmpty
+                      ? null
+                      : NetworkImage(avatarUrl!),
+                  child: avatarUrl == null || avatarUrl!.isEmpty
+                      ? const Icon(Icons.person_rounded,
+                          color: AppColors.primary)
+                      : null,
                 ),
               ),
               if (isVerified)

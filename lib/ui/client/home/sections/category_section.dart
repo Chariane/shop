@@ -3,35 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/animations.dart';
 import '../../../../core/theme.dart';
 import '../../../../providers/filter_providers.dart';
+import '../../../../providers/platform_config_provider.dart';
+import '../../../../domain/entities/platform_config.dart';
 
 class CategorySection extends ConsumerWidget {
   const CategorySection({super.key});
 
-  static const _items = [
-    _CategoryItem(
-      label: 'Tech',
-      image:
-          'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&q=80',
-    ),
-    _CategoryItem(
-      label: 'Mode',
-      image:
-          'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80',
-    ),
-    _CategoryItem(
-      label: 'Maison',
-      image:
-          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80',
-    ),
-    _CategoryItem(
-      label: 'Sport',
-      image:
-          'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(platformConfigProvider).categories;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -48,13 +28,13 @@ class CategorySection extends ConsumerWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            itemCount: _items.length,
+            itemCount: items.length,
             separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (context, i) {
-              final cat = _items[i];
+              final cat = items[i];
               return PressableScale(
                 onTap: () =>
-                    ref.read(filterProvider.notifier).setCategory(cat.label),
+                    ref.read(filterProvider.notifier).setCategory(cat.name),
                 child: _CategoryCard(item: cat),
               );
             },
@@ -65,13 +45,8 @@ class CategorySection extends ConsumerWidget {
   }
 }
 
-class _CategoryItem {
-  final String label, image;
-  const _CategoryItem({required this.label, required this.image});
-}
-
 class _CategoryCard extends StatelessWidget {
-  final _CategoryItem item;
+  final PlatformCategory item;
   const _CategoryCard({required this.item});
 
   @override
@@ -84,7 +59,7 @@ class _CategoryCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.network(
-              item.image,
+              item.imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
             ),
@@ -104,7 +79,7 @@ class _CategoryCard extends StatelessWidget {
               left: AppSpacing.md,
               bottom: AppSpacing.md,
               child: Text(
-                item.label,
+                item.name,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,

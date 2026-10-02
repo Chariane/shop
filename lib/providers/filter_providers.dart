@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 import 'product_providers.dart';
 
 enum SortOption {

@@ -1,15 +1,20 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../core/providers/core_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/animations.dart';
 import '../../../core/theme.dart';
-import '../../../data/models/app_user.dart';
+import 'package:shophub/domain/entities/app_user.dart';
 import '../../../providers/auth_providers.dart';
 import 'sections/profile_header.dart';
 import 'sections/profile_menu.dart';
 import 'sections/profile_quick_actions.dart';
 import 'sections/profile_recent_orders.dart';
 import 'sections/profile_stats.dart';
-import 'sections/profile_wallet.dart';
+import '../../../providers/orders_providers.dart';
+import '../../../providers/notification_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,9 +22,10 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
-    final profileName = user?.name ?? 'Alex Martin';
-    final profileEmail = user?.email ?? 'alex@example.com';
-    final avatarUrl = user?.avatarUrl ?? 'https://i.pravatar.cc/150?u=alex';
+    final ordersAsync = ref.watch(myOrdersProvider);
+    final profileName = user?.name ?? '';
+    final profileEmail = user?.email ?? '';
+    final avatarUrl = user?.avatarUrl ?? '';
 
     return Scaffold(
       backgroundColor: context.background,
@@ -40,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
                   name: profileName,
                   email: profileEmail,
                   avatarUrl: avatarUrl,
-                  memberSince: 'mars 2023',
+                  memberSince: _memberSince(user?.createdAt),
                   onEdit: () => _showEditProfileSheet(
                     context,
                     ref,
@@ -52,18 +58,12 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              const FadeSlideIn(
-                delay: Duration(milliseconds: 100),
-                child: ProfileStats(ordersCount: 12),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              const FadeSlideIn(
-                delay: Duration(milliseconds: 160),
-                child: ProfileWallet(
-                  points: 2450,
-                  tier: 'Gold',
-                  progressToNext: 0.65,
-                ),
+              FadeSlideIn(
+                delay: const Duration(milliseconds: 100),
+                child: ProfileStats(
+                    ordersCount: ordersAsync.valueOrNull?.length ?? 0,
+                    loyaltyPoints:
+                        ref.watch(loyaltyPointsProvider).valueOrNull ?? 0),
               ),
               const SizedBox(height: AppSpacing.xxl),
               FadeSlideIn(
@@ -81,9 +81,12 @@ class ProfileScreen extends ConsumerWidget {
                 child: _sectionTitle(context, 'Commandes récentes'),
               ),
               const SizedBox(height: AppSpacing.md),
-              const FadeSlideIn(
-                delay: Duration(milliseconds: 360),
-                child: ProfileRecentOrders(),
+              FadeSlideIn(
+                delay: const Duration(milliseconds: 360),
+                child: ProfileRecentOrders(
+                    orders: ordersAsync.valueOrNull ?? const [],
+                    isLoading: ordersAsync.isLoading,
+                    hasError: ordersAsync.hasError),
               ),
               const SizedBox(height: AppSpacing.xxl),
               FadeSlideIn(
@@ -112,6 +115,12 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _memberSince(DateTime? createdAt) {
+    if (createdAt == null) return 'Date indisponible';
+    final date = createdAt.toLocal();
+    return '${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Widget _sectionTitle(BuildContext context, String text) {
@@ -151,28 +160,39 @@ class ProfileScreen extends ConsumerWidget {
           initialName: currentName,
           initialEmail: currentEmail,
           initialAvatarUrl: currentAvatarUrl,
+          onUploadAvatar: (file) =>
+              ref.read(marketplaceApiProvider).uploadProfileImage(file),
           onSave: ({
             required String name,
             required String email,
             required String avatarUrl,
-          }) {
-            ref.read(authProvider.notifier).updateProfile(
-                  name: name,
-                  email: email,
-                  avatarUrl: avatarUrl,
-                );
-            Navigator.pop(sheetContext);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Profil mis à jour'),
-                backgroundColor: AppColors.success,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(AppSpacing.lg),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+          }) async {
+            try {
+              await ref.read(authProvider.notifier).updateProfile(
+                    name: name,
+                    email: email,
+                    avatarUrl: avatarUrl,
+                  );
+              if (!sheetContext.mounted) return;
+              Navigator.pop(sheetContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Profil mis à jour'),
+                  backgroundColor: AppColors.success,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(AppSpacing.lg),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
                 ),
-              ),
-            );
+              );
+            } catch (error) {
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                SnackBar(
+                    content: Text(error.toString()),
+                    backgroundColor: AppColors.danger),
+              );
+            }
           },
         );
       },
@@ -226,7 +246,8 @@ class _EditProfileSheet extends StatefulWidget {
   final String initialName;
   final String initialEmail;
   final String initialAvatarUrl;
-  final void Function({
+  final Future<String> Function(XFile file) onUploadAvatar;
+  final Future<void> Function({
     required String name,
     required String email,
     required String avatarUrl,
@@ -236,6 +257,7 @@ class _EditProfileSheet extends StatefulWidget {
     required this.initialName,
     required this.initialEmail,
     required this.initialAvatarUrl,
+    required this.onUploadAvatar,
     required this.onSave,
   });
 
@@ -246,34 +268,64 @@ class _EditProfileSheet extends StatefulWidget {
 class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
-  late final TextEditingController _avatarController;
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? _selectedAvatar;
+  Uint8List? _avatarBytes;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _emailController = TextEditingController(text: widget.initialEmail);
-    _avatarController = TextEditingController(text: widget.initialAvatarUrl);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _avatarController.dispose();
+
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _pickAvatar() async {
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La photo doit faire 5 Mo maximum.')),
+      );
+      return;
+    }
+    setState(() {
+      _selectedAvatar = file;
+      _avatarBytes = bytes;
+    });
+  }
+
+  Future<void> _submit() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final avatarUrl = _avatarController.text.trim();
-
-    widget.onSave(
-      name: name.isEmpty ? widget.initialName : name,
-      email: email.isEmpty ? widget.initialEmail : email,
-      avatarUrl: avatarUrl.isEmpty ? widget.initialAvatarUrl : avatarUrl,
-    );
+    try {
+      final avatarUrl = _selectedAvatar == null
+          ? widget.initialAvatarUrl
+          : await widget.onUploadAvatar(_selectedAvatar!);
+      await widget.onSave(
+        name: name.isEmpty ? widget.initialName : name,
+        email: email.isEmpty ? widget.initialEmail : email,
+        avatarUrl: avatarUrl,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(error.toString()), backgroundColor: AppColors.danger),
+      );
+    }
   }
 
   @override
@@ -345,13 +397,32 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: _avatarController,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL de la photo',
-                    prefixIcon: Icon(Icons.image_rounded),
-                  ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 34,
+                      backgroundImage: _avatarBytes != null
+                          ? MemoryImage(_avatarBytes!) as ImageProvider<Object>
+                          : widget.initialAvatarUrl.isNotEmpty
+                              ? NetworkImage(widget.initialAvatarUrl)
+                                  as ImageProvider<Object>
+                              : null,
+                      child: _avatarBytes == null &&
+                              widget.initialAvatarUrl.isEmpty
+                          ? const Icon(Icons.person_rounded, size: 30)
+                          : null,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _pickAvatar,
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: Text(_selectedAvatar == null
+                            ? 'Choisir une photo'
+                            : 'Changer la photo'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SizedBox(

@@ -1,3 +1,4 @@
+import '../../core/currency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/animations.dart';
@@ -113,7 +114,7 @@ class CartScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              '${item.product.price.toStringAsFixed(2)} €',
+                              '${formatCfa(item.product.price)}',
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w700,
@@ -222,7 +223,7 @@ class CartScreen extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '${total.toStringAsFixed(2)} €',
+                        '${formatCfa(total)}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 22,

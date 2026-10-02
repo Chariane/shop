@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/animations.dart';
 import '../../../core/theme.dart';
-import '../../../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 import '../../../providers/favorites_providers.dart';
 import '../../../providers/product_providers.dart';
 import 'sections/product_gallery.dart';

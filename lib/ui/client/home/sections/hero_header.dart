@@ -7,17 +7,18 @@ import '../../../../core/theme.dart';
 import '../../../../core/theme_provider.dart';
 import '../widgets/glass_search_bar.dart';
 import '../widgets/theme_toggle.dart';
+import '../../../../providers/platform_config_provider.dart';
 
 class HeroHeader extends ConsumerWidget {
   const HeroHeader({super.key});
-
-  static const _bgImage =
-      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topPadding = MediaQuery.of(context).padding.top;
     final isDark = ref.watch(isDarkProvider);
+    final config = ref.watch(platformConfigProvider);
+    final heroImage = config.featuredSlides.firstOrNull?.imageUrl ??
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1600&q=80';
 
     return SizedBox(
       height: 400 + topPadding,
@@ -25,7 +26,7 @@ class HeroHeader extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           Image.network(
-            _bgImage,
+            heroImage,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(color: AppColors.primary),
           ),
@@ -76,9 +77,13 @@ class HeroHeader extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  const FadeSlideIn(
-                    delay: Duration(milliseconds: 120),
-                    child: _RotatingTagline(),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 120),
+                    child: _RotatingTagline(
+                      phrases: config.featuredSlides
+                          .map((slide) => slide.subtitle)
+                          .toList(),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   const FadeSlideIn(
@@ -96,18 +101,14 @@ class HeroHeader extends ConsumerWidget {
 }
 
 class _RotatingTagline extends StatefulWidget {
-  const _RotatingTagline();
+  final List<String> phrases;
+  const _RotatingTagline({required this.phrases});
 
   @override
   State<_RotatingTagline> createState() => _RotatingTaglineState();
 }
 
 class _RotatingTaglineState extends State<_RotatingTagline> {
-  static const _phrases = [
-    'Achetez vos coups de cœur en toute confiance.',
-    'Vendez vos produits à une communauté engagée.',
-    'Rayonnez avec une boutique qui vous ressemble.',
-  ];
   late final Timer _timer;
   int _index = 0;
 
@@ -116,7 +117,9 @@ class _RotatingTaglineState extends State<_RotatingTagline> {
     super.initState();
     _timer = Timer.periodic(const Duration(milliseconds: 1600), (_) {
       if (!mounted) return;
-      setState(() => _index = (_index + 1) % _phrases.length);
+      final phrases = widget.phrases;
+      if (phrases.isEmpty) return;
+      setState(() => _index = (_index + 1) % phrases.length);
     });
   }
 
@@ -128,6 +131,9 @@ class _RotatingTaglineState extends State<_RotatingTagline> {
 
   @override
   Widget build(BuildContext context) {
+    final phrases = widget.phrases;
+    if (phrases.isEmpty) return const SizedBox(height: 46);
+    final index = _index % phrases.length;
     return SizedBox(
       height: 46,
       child: AnimatedSwitcher(
@@ -146,10 +152,10 @@ class _RotatingTaglineState extends State<_RotatingTagline> {
           );
         },
         child: Align(
-          key: ValueKey(_phrases[_index]),
+          key: ValueKey(phrases[index]),
           alignment: Alignment.centerLeft,
           child: Text(
-            _phrases[_index],
+            phrases[index],
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

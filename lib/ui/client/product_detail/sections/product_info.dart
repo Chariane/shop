@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme.dart';
-import '../../../../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 
 class ProductInfo extends StatelessWidget {
   final Product product;

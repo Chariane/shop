@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme.dart';
-import '../../../../providers/cart_providers.dart';
 import '../../../../providers/favorites_providers.dart';
 import '../widgets/profile_stat_card.dart';
 
 class ProfileStats extends ConsumerWidget {
   final int ordersCount;
-  const ProfileStats({super.key, required this.ordersCount});
+  final int loyaltyPoints;
+  const ProfileStats(
+      {super.key, required this.ordersCount, required this.loyaltyPoints});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favCount = ref.watch(favoritesCountProvider);
-    final cartCount = ref.watch(cartCountProvider);
 
     return Row(
       children: [
@@ -37,8 +37,8 @@ class ProfileStats extends ConsumerWidget {
         Expanded(
           child: ProfileStatCard(
             icon: Icons.shopping_bag_rounded,
-            value: '$cartCount',
-            label: 'Panier',
+            value: '$loyaltyPoints',
+            label: 'Points',
             accent: AppColors.success,
           ),
         ),

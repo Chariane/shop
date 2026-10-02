@@ -1,19 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/datasources/marketplace_api.dart';
-import '../data/models/app_user.dart';
-import 'product_providers.dart';
+import 'package:shophub/domain/entities/app_user.dart';
+import '../domain/usecases/catalog_use_cases.dart';
+import '../core/providers/core_providers.dart';
 
 class VendorsNotifier extends StateNotifier<AsyncValue<List<AppUser>>> {
-  final MarketplaceApi _api;
+  final CatalogUseCases _useCases;
 
-  VendorsNotifier(this._api) : super(const AsyncLoading()) {
+  VendorsNotifier(this._useCases) : super(const AsyncLoading()) {
     _load();
   }
 
   Future<void> _load() async {
     state = const AsyncLoading();
     try {
-      state = AsyncData(await _api.fetchVendors());
+      state = AsyncData(await _useCases.getVendors());
     } catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
     }
@@ -36,7 +36,7 @@ class VendorsNotifier extends StateNotifier<AsyncValue<List<AppUser>>> {
 
 final vendorsProvider =
     StateNotifierProvider<VendorsNotifier, AsyncValue<List<AppUser>>>((ref) {
-  return VendorsNotifier(ref.watch(marketplaceApiProvider));
+  return VendorsNotifier(ref.watch(catalogUseCasesProvider));
 });
 
 final vendorByIdProvider =

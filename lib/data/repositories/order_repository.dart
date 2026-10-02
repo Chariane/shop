@@ -1,4 +1,4 @@
-import '../models/order.dart';
+import 'package:shophub/domain/entities/order.dart';
 
 class OrderRepository {
   final List<Order> _orders = [];

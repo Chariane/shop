@@ -1,83 +1,72 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/models/app_user.dart';
+import '../core/providers/core_providers.dart';
+import 'package:shophub/domain/entities/app_user.dart';
+import '../domain/usecases/auth_use_cases.dart';
+import '../data/datasources/mocks/vendors_mock.dart';
+import 'platform_config_provider.dart';
 
 class AuthNotifier extends StateNotifier<AppUser?> {
-  AuthNotifier() : super(null);
+  final AuthUseCases _useCases;
+  bool isDemoSession = false;
 
-  void loginAsClient({
-    String name = 'Alex Martin',
-    String email = 'alex@example.com',
-  }) {
-    state = AppUser(
-      id: 'c1',
+  AuthNotifier(this._useCases) : super(null) {
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      state = await _useCases.restoreSession();
+      isDemoSession = false;
+    } catch (_) {
+      state = null;
+    }
+  }
+
+  Future<void> login({required String email, required String password}) async {
+    state = await _useCases.login(email: email, password: password);
+    isDemoSession = false;
+  }
+
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+    String? shopName,
+    String? category,
+  }) async {
+    await _useCases.register(
       name: name,
       email: email,
-      role: UserRole.client,
-      avatarUrl: 'https://i.pravatar.cc/150?u=alex',
-    );
-  }
-
-  void loginAsVendor(AppUser vendor) => state = vendor;
-
-  void registerVendorAccount({
-    required String ownerName,
-    required String email,
-    required String shopName,
-    required String category,
-  }) {
-    state = AppUser(
-      id: 'vendor-${DateTime.now().millisecondsSinceEpoch}',
-      name: ownerName,
-      email: email,
-      role: UserRole.vendor,
-      avatarUrl: 'https://i.pravatar.cc/150?u=$email',
+      password: password,
+      role: role,
       shopName: shopName,
-      shopTagline: 'Nouvelle boutique sur ShopHub',
-      shopDescription:
-          'Boutique créée sur ShopHub. Retrouvez une sélection de produits '
-          'préparés avec soin et un suivi de commande clair.',
-      shopBannerUrl:
-          'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=80',
-      shopCity: 'Cotonou',
-      shopCountry: 'Bénin',
-      shopCategories: [category],
-      shopResponseTimeMinutes: 60,
-      shopFoundedYear: DateTime.now().year,
+      category: category,
     );
   }
 
-  void updateProfile({
+  Future<void> verifyEmail(
+      {required String email, required String code}) async {
+    state = await _useCases.verifyEmail(email: email, code: code);
+    isDemoSession = false;
+  }
+
+  Future<void> resendVerificationCode({required String email}) =>
+      _useCases.resendVerificationCode(email: email);
+
+  Future<void> updateProfile({
     required String name,
     required String email,
     required String avatarUrl,
-  }) {
-    final current = state;
-    if (current == null) return;
-
-    state = AppUser(
-      id: current.id,
+  }) async {
+    state = await _useCases.updateProfile(
       name: name,
       email: email,
-      role: current.role,
-      avatarUrl: avatarUrl,
-      shopName: current.shopName,
-      shopTagline: current.shopTagline,
-      shopDescription: current.shopDescription,
-      shopBannerUrl: current.shopBannerUrl,
-      shopCity: current.shopCity,
-      shopCountry: current.shopCountry,
-      shopCategories: current.shopCategories,
-      isVerified: current.isVerified,
-      shopSales: current.shopSales,
-      shopRating: current.shopRating,
-      shopReviewCount: current.shopReviewCount,
-      shopProductCount: current.shopProductCount,
-      shopResponseTimeMinutes: current.shopResponseTimeMinutes,
-      shopFoundedYear: current.shopFoundedYear,
+      avatarUrl: avatarUrl.trim().isEmpty ? null : avatarUrl.trim(),
     );
   }
 
-  void updateShopProfile({
+  Future<AppUser> updateShopProfile({
     required String shopName,
     required String shopTagline,
     required String shopDescription,
@@ -85,11 +74,8 @@ class AuthNotifier extends StateNotifier<AppUser?> {
     required String shopCity,
     required String shopCountry,
     required List<String> shopCategories,
-  }) {
-    final current = state;
-    if (current == null) return;
-
-    state = current.copyWith(
+  }) async {
+    final updated = await _useCases.updateShopProfile(
       shopName: shopName,
       shopTagline: shopTagline,
       shopDescription: shopDescription,
@@ -98,13 +84,44 @@ class AuthNotifier extends StateNotifier<AppUser?> {
       shopCountry: shopCountry,
       shopCategories: shopCategories,
     );
+    state = updated;
+    return updated;
   }
 
-  void logout() => state = null;
+  void enterDemoVendor() {
+    isDemoSession = true;
+    state = VendorsMock.vendor1;
+  }
+
+  void enterDemoClient() {
+    isDemoSession = true;
+    state = const AppUser(
+      id: 'demo-client',
+      name: 'Visiteur démo',
+      email: 'demo@shophub.local',
+      role: UserRole.client,
+      createdAt: null,
+    );
+  }
+
+  Future<void> logout() async {
+    try {
+      await _useCases.logout();
+    } finally {
+      state = null;
+      isDemoSession = false;
+    }
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AppUser?>((ref) {
-  return AuthNotifier();
+  return AuthNotifier(ref.watch(authUseCasesProvider));
+});
+
+final isDemoModeProvider = Provider<bool>((ref) {
+  ref.watch(authProvider);
+  return ref.watch(platformConfigProvider).demoMode ||
+      ref.watch(authProvider.notifier).isDemoSession;
 });
 
 final isAuthenticatedProvider = Provider<bool>((ref) {

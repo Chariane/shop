@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../providers/cart_providers.dart';
+import '../../providers/auth_providers.dart';
 import 'cart_screen.dart';
 import 'catalog_screen.dart';
 import 'home/home_screen.dart';
@@ -27,9 +28,15 @@ class _ClientShellState extends ConsumerState<ClientShell> {
   @override
   Widget build(BuildContext context) {
     final cartCount = ref.watch(cartCountProvider);
+    final demoMode = ref.watch(isDemoModeProvider);
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
+      body: Column(
+        children: [
+          if (demoMode) const _DemoModeBanner(),
+          Expanded(child: IndexedStack(index: _index, children: _screens)),
+        ],
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
@@ -79,4 +86,18 @@ class _ClientShellState extends ConsumerState<ClientShell> {
       ),
     );
   }
+}
+
+class _DemoModeBanner extends StatelessWidget {
+  const _DemoModeBanner();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        color: AppColors.warning.withValues(alpha: 0.2),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+        child: const Text(
+            'Mode démo hors ligne : les commandes ne sont pas enregistrées.'),
+      );
 }

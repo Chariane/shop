@@ -1,0 +1,125 @@
+import type { OrderView, ProductView, UserProfile, VendorView } from '../../domain/models';
+
+function parseList(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseSpecifications(value: string): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return Object.fromEntries(
+        Object.entries(parsed).filter((item): item is [string, string] => typeof item[1] === 'string'),
+      );
+    }
+  } catch {
+    // Keep an invalid optional JSON field from breaking the catalog response.
+  }
+  return {};
+}
+
+export function presentUser(user: UserProfile) {
+  if (user.vendorProfile) return presentVendor({
+    ...user,
+    id: user.vendorProfile.id,
+    vendorProfile: user.vendorProfile,
+  } as VendorView);
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatarUrl: user.avatarUrl,
+    createdAt: user.createdAt.toISOString(),
+    shopCategories: [],
+    isVerified: false,
+    shopSales: 0,
+    shopRating: 0,
+    shopReviewCount: 0,
+    shopProductCount: 0,
+    shopResponseTimeMinutes: 0,
+  };
+}
+
+export function presentVendor(vendor: VendorView) {
+  const profile = vendor.vendorProfile;
+  return {
+    id: vendor.id,
+    name: vendor.name,
+    email: vendor.email,
+    role: 'vendor',
+    avatarUrl: vendor.avatarUrl,
+    createdAt: vendor.createdAt.toISOString(),
+    shopName: profile.shopName,
+    shopTagline: profile.shopTagline,
+    shopDescription: profile.shopDescription,
+    shopBannerUrl: profile.shopBannerUrl,
+    shopCity: profile.shopCity,
+    shopCountry: profile.shopCountry,
+    shopCategories: parseList(profile.shopCategoriesJson),
+    isVerified: profile.isVerified,
+    shopSales: profile.shopSales,
+    shopRating: profile.shopRating,
+    shopReviewCount: profile.shopReviewCount,
+    shopProductCount: profile.productCount,
+    shopResponseTimeMinutes: profile.shopResponseMinutes,
+    shopFoundedYear: profile.shopFoundedYear,
+  };
+}
+
+export function presentProduct(product: ProductView) {
+  return {
+    id: product.id,
+    vendorId: product.vendorId,
+    vendorName: product.vendorName,
+    name: product.name,
+    shortDescription: product.shortDescription,
+    longDescription: product.longDescription,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    imageUrl: product.imageUrl,
+    gallery: product.gallery,
+    category: product.category,
+    tags: parseList(product.tagsJson),
+    specifications: parseSpecifications(product.specificationsJson),
+    rating: product.rating,
+    reviewCount: product.reviewCount,
+    stock: product.stock,
+    isActive: product.isActive,
+    freeShipping: product.freeShipping,
+    warrantyMonths: product.warrantyMonths,
+    createdAt: product.createdAt.toISOString(),
+  };
+}
+
+export function presentOrder(order: OrderView) {
+  return {
+    id: order.id,
+    clientId: order.clientId,
+    clientName: order.clientName,
+    vendorId: order.vendorId,
+    vendorName: order.vendorName,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    paymentId: order.paymentId,
+    total: order.total,
+    shopReview: order.shopReview,
+    deliveryMethod: order.deliveryMethod,
+    deliveryFee: order.deliveryFee,
+    deliveryAddress: order.deliveryAddress,
+    items: order.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      imageUrl: item.imageUrl,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+    })),
+    createdAt: order.createdAt.toISOString(),
+  };
+}

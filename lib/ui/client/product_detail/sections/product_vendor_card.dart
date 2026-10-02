@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/animations.dart';
 import '../../../../core/theme.dart';
-import '../../../../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 import '../../vendor_shop/vendor_shop_screen.dart';
 
 class ProductVendorCard extends StatelessWidget {

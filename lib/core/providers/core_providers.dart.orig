@@ -1,0 +1,27 @@
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import '../../data/repositories/api_auth_repository.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../network/api_client.dart';
+import '../storage/api_cache_store.dart';
+import '../storage/token_storage.dart';
+
+final tokenStorageProvider = Provider<TokenStorage>(
+  (ref) => const TokenStorage(FlutterSecureStorage()),
+);
+
+final dioProvider = Provider<Dio>(
+  (ref) => ApiClient.create(ref.watch(tokenStorageProvider)),
+);
+
+final apiCacheStoreProvider =
+    Provider<ApiCacheStore>((ref) => HiveApiCacheStore());
+
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => ApiAuthRepository(
+    ref.watch(dioProvider),
+    ref.watch(tokenStorageProvider),
+  ),
+);

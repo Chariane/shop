@@ -1,7 +1,8 @@
+import '../../../../core/currency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme.dart';
-import '../../../../data/models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 import '../../../../providers/cart_providers.dart';
 
 class DetailBottomBar extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _DetailBottomBarState extends ConsumerState<DetailBottomBar> {
                       Padding(
                         padding: const EdgeInsets.only(right: 6, bottom: 2),
                         child: Text(
-                          '${widget.product.originalPrice!.toStringAsFixed(2)} €',
+                          '${formatCfa(widget.product.originalPrice!)}',
                           style: TextStyle(
                             fontSize: 11,
                             color: context.textMuted,
@@ -71,7 +72,7 @@ class _DetailBottomBarState extends ConsumerState<DetailBottomBar> {
                         ),
                       ),
                     Text(
-                      '${widget.product.price.toStringAsFixed(2)} €',
+                      '${formatCfa(widget.product.price)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 22,

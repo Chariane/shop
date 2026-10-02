@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  role          String         @default("client")
+  avatarUrl     String?
+  vendorProfile VendorProfile?
+  clientOrders  Order[]        @relation("ClientOrders")
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model VendorProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopName            String
+  shopTagline         String?
+  shopDescription     String?
+  shopBannerUrl       String?
+  shopCity            String?
+  shopCountry         String?
+  shopCategoriesJson  String    @default("[]")
+  isVerified          Boolean   @default(false)
+  shopSales           Int       @default(0)
+  shopRating          Float     @default(0)
+  shopReviewCount     Int       @default(0)
+  shopResponseMinutes Int       @default(60)
+  shopFoundedYear     Int?
+  products            Product[]
+  orders              Order[]   @relation("VendorOrders")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Product {
+  id               String         @id @default(cuid())
+  vendorId         String
+  vendor           VendorProfile  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name             String
+  shortDescription String
+  longDescription  String
+  price            Float
+  originalPrice    Float?
+  imageUrl         String
+  category         String
+  tagsJson         String         @default("[]")
+  specificationsJson String       @default("{}")
+  rating           Float          @default(0)
+  reviewCount      Int            @default(0)
+  stock            Int            @default(0)
+  isActive         Boolean        @default(true)
+  freeShipping     Boolean        @default(false)
+  warrantyMonths   Int            @default(12)
+  gallery          ProductImage[]
+  orderItems       OrderItem[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([vendorId])
+  @@index([category])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int      @default(0)
+}
+
+model Order {
+  id             String         @id @default(cuid())
+  clientId       String
+  client         User           @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Restrict)
+  vendorId       String
+  vendor         VendorProfile  @relation("VendorOrders", fields: [vendorId], references: [id], onDelete: Restrict)
+  status         String         @default("pending")
+  deliveryMethod String
+  deliveryFee    Float          @default(0)
+  deliveryName   String
+  deliveryPhone  String
+  deliveryStreet String
+  deliveryCity   String
+  deliveryCountry String
+  total          Float
+  items          OrderItem[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([clientId])
+  @@index([vendorId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName String
+  unitPrice   Float
+  quantity    Int
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}

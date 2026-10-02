@@ -1,4 +1,4 @@
-import '../../models/product.dart';
+import 'package:shophub/domain/entities/product.dart';
 
 abstract final class ProductsMock {
   static List<Product> generate() {
@@ -14,8 +14,8 @@ abstract final class ProductsMock {
             'Le Casque Audio Pro X2 redéfinit l\'écoute mobile. Sa '
             'réduction de bruit adaptative analyse en temps réel votre '
             'environnement. Transducteurs 40 mm pour des basses profondes.',
-        price: 179.99,
-        originalPrice: 249.99,
+        price: 118066,
+        originalPrice: 163983,
         imageUrl:
             'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80',
         gallery: const [
@@ -47,8 +47,8 @@ abstract final class ProductsMock {
             'La Montre Aura vous accompagne dans chaque effort. Écran '
             'AMOLED de 1,4" lisible en plein soleil, GPS bi-bande, '
             'plus de 150 modes sport, étanche 50 mètres.',
-        price: 299.00,
-        originalPrice: 399.00,
+        price: 196131,
+        originalPrice: 261727,
         imageUrl:
             'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80',
         gallery: const [
@@ -79,7 +79,7 @@ abstract final class ProductsMock {
             'Emportez la fête partout avec Boom. Ses 4 haut-parleurs '
             'diffusent un son 360° puissant. Certifiée IPX7, elle '
             'résiste à une immersion complète.',
-        price: 69.99,
+        price: 45910,
         imageUrl:
             'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=800&q=80',
         gallery: const [],
@@ -105,8 +105,8 @@ abstract final class ProductsMock {
         longDescription: 'Les Sneakers Urban White sont le fruit de 3 ans de '
             'développement. Cuir pleine fleur italien, semelle à mémoire '
             'de forme. Fabriquées au Portugal.',
-        price: 119.00,
-        originalPrice: 149.00,
+        price: 78059,
+        originalPrice: 97738,
         imageUrl:
             'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80',
         gallery: const [
@@ -133,8 +133,8 @@ abstract final class ProductsMock {
         shortDescription: 'Cuir italien, finitions soignées',
         longDescription: 'Un sac qui traverse les années. Cuir tanné végétal, '
             'coutures sellier, doublure coton bio. Compartiment 13".',
-        price: 229.00,
-        originalPrice: 289.00,
+        price: 150214,
+        originalPrice: 189572,
         imageUrl:
             'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=80',
         gallery: const [
@@ -162,7 +162,7 @@ abstract final class ProductsMock {
         shortDescription: 'Verres polarisés UV400, monture acétate',
         longDescription: 'Protégez vos yeux sans sacrifier le style. Verres '
             'polarisés, protection UV400, monture acétate bio-sourcée.',
-        price: 139.00,
+        price: 91178,
         imageUrl:
             'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&q=80',
         gallery: const [],
@@ -186,8 +186,8 @@ abstract final class ProductsMock {
         longDescription:
             'Inspirée des intérieurs scandinaves, la Lampe Nordique '
             'diffuse une lumière chaude. Pied en chêne massif FSC.',
-        price: 79.90,
-        originalPrice: 99.00,
+        price: 52411,
+        originalPrice: 64940,
         imageUrl:
             'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&q=80',
         gallery: const [
@@ -217,7 +217,7 @@ abstract final class ProductsMock {
             'Façonné à la main dans notre atelier, ce vase en céramique '
             'grès émaillé apporte une touche d\'authenticité à votre '
             'intérieur.',
-        price: 42.00,
+        price: 27550,
         imageUrl:
             'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800&q=80',
         gallery: const [],

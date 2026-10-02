@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'core/storage/api_cache_store.dart';
 import 'core/theme.dart';
 import 'core/theme_provider.dart';
 import 'ui/auth/app_gate.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox<String>(HiveApiCacheStore.boxName);
   runApp(const ProviderScope(child: ShopHubApp()));
 }
 

@@ -1,0 +1,76 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { AuthUseCases } from './auth-use-cases';
+import { CatalogUseCases } from './catalog-use-cases';
+import { OrderUseCases } from './order-use-cases';
+import { ApplicationError } from '../domain/errors';
+import type { AuthRepository, CatalogRepository, OrdersRepository } from '../domain/repositories';
+
+const unusedAuthRepository = {} as AuthRepository;
+const unusedCatalogRepository = {} as CatalogRepository;
+const unusedOrdersRepository = {} as OrdersRepository;
+const passwordHasher = {
+  hash: async (value: string) => value,
+  verify: async () => false,
+};
+const tokenService = {
+  issueAccessToken: () => 'access',
+  issueRefreshToken: () => 'refresh',
+  verifyRefreshToken: () => ({ userId: 'u1', role: 'client' }),
+  hash: (value: string) => value,
+  expiresAt: () => new Date(Date.now() + 60_000),
+};
+
+test('login refuse des identifiants inconnus', async () => {
+  const users = {
+    findUserByEmail: async () => null,
+  } as unknown as AuthRepository;
+  const auth = new AuthUseCases(users, passwordHasher, tokenService);
+
+  await assert.rejects(
+    auth.login('absent@example.com', 'password'),
+    (error: unknown) => error instanceof ApplicationError && error.code === 'UNAUTHORIZED',
+  );
+});
+
+test('inscription vendeur exige un nom de boutique', async () => {
+  const auth = new AuthUseCases(unusedAuthRepository, passwordHasher, tokenService);
+
+  await assert.rejects(
+    auth.register({
+      name: 'Awa',
+      email: 'awa@example.com',
+      password: 'secure-password',
+      role: 'vendor',
+    }),
+    (error: unknown) => error instanceof ApplicationError && error.code === 'VALIDATION',
+  );
+});
+
+test('un vendeur ne peut pas passer une commande client', async () => {
+  const orders = new OrderUseCases(unusedOrdersRepository);
+
+  await assert.rejects(
+    orders.place({
+      userId: 'v1',
+      role: 'vendor',
+      items: [{ productId: 'p1', quantity: 1 }],
+      deliveryMethod: 'standard',
+      deliveryFee: 0,
+      address: { fullName: 'Awa', phone: '1', street: 'Rue 1', city: 'Cotonou', country: 'Bénin' },
+    }),
+    (error: unknown) => error instanceof ApplicationError && error.code === 'FORBIDDEN',
+  );
+});
+
+test('un produit inexistant produit une erreur not found', async () => {
+  const catalog = new CatalogUseCases({
+    findProduct: async () => null,
+  } as unknown as CatalogRepository);
+
+  await assert.rejects(
+    catalog.getProduct('missing'),
+    (error: unknown) => error instanceof ApplicationError && error.code === 'NOT_FOUND',
+  );
+});

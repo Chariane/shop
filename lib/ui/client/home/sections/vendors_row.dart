@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme.dart';
-import '../../../../data/models/app_user.dart';
+import 'package:shophub/domain/entities/app_user.dart';
 import '../../../../providers/user_providers.dart';
 import '../../../widgets/shimmer.dart';
 import '../widgets/vendor_shop_card.dart';

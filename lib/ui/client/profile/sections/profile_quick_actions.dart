@@ -1,10 +1,13 @@
+import '../../../../core/currency.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/animations.dart';
 import '../../../../core/theme.dart';
 import '../../../../core/theme_provider.dart';
-import '../../../../data/models/delivery_option.dart';
+import 'package:shophub/domain/entities/delivery_option.dart';
 import '../../../../providers/checkout_providers.dart';
+import '../../../../providers/orders_providers.dart';
+import 'package:shophub/domain/entities/order.dart';
 import '../profile_product_collection_screen.dart';
 
 enum _ActionType {
@@ -108,9 +111,9 @@ class ProfileQuickActions extends ConsumerWidget {
   ) {
     switch (type) {
       case _ActionType.orders:
-        _showOrdersSheet(context);
+        _showOrdersSheet(context, ref.read(myOrdersProvider));
       case _ActionType.addresses:
-        _showAddressSheet(context, ref.read(deliveryAddressProvider));
+        _showAddressSheet(context);
       case _ActionType.payment:
         _showPaymentSheet(context);
       case _ActionType.favorites:
@@ -183,59 +186,51 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-void _showOrdersSheet(BuildContext context) {
+void _showOrdersSheet(
+    BuildContext context, AsyncValue<List<Order>> ordersAsync) {
   _showActionSheet(
     context,
     title: 'Mes commandes',
     icon: Icons.receipt_long_rounded,
     accent: AppColors.primary,
-    child: const Column(
-      children: [
-        _InfoTile(
-          icon: Icons.check_circle_rounded,
-          title: '#SH-1284',
-          subtitle: 'Casque Audio Pro X2 · Livrée · 179,99 €',
-          color: AppColors.success,
-        ),
-        _InfoTile(
-          icon: Icons.local_shipping_rounded,
-          title: '#SH-1271',
-          subtitle: 'Sneakers Urban White · En transit · 119,00 €',
-          color: AppColors.warning,
-        ),
-        _InfoTile(
-          icon: Icons.access_time_rounded,
-          title: '#SH-1268',
-          subtitle: 'Lampe Nordique · En attente · 79,90 €',
-          color: AppColors.primary,
-        ),
-      ],
+    child: ordersAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) =>
+          const _NoticeBox(text: 'Impossible de charger les commandes.'),
+      data: (orders) => orders.isEmpty
+          ? const _NoticeBox(text: 'Aucune commande pour le moment.')
+          : Column(
+              children: [
+                for (final order in orders.take(5))
+                  _InfoTile(
+                    icon: Icons.receipt_long_rounded,
+                    title: order.id,
+                    subtitle:
+                        '${order.items.isEmpty ? 'Commande' : order.items.first.product.name} · ${order.status.label} · ${formatCfa(order.total)}',
+                    color: switch (order.status) {
+                      OrderStatus.delivered => AppColors.success,
+                      OrderStatus.shipped => AppColors.warning,
+                      OrderStatus.confirmed => AppColors.primary,
+                      OrderStatus.pending => AppColors.warning,
+                    },
+                  ),
+              ],
+            ),
     ),
   );
 }
 
-void _showAddressSheet(BuildContext context, DeliveryAddress address) {
+void _showAddressSheet(BuildContext context) {
   _showActionSheet(
     context,
     title: 'Adresse',
     icon: Icons.location_on_rounded,
     accent: AppColors.success,
-    child: Column(
+    child: const Column(
       children: [
-        _InfoTile(
-          icon: Icons.person_rounded,
-          title: address.fullName,
-          subtitle: address.phone,
-          color: AppColors.primary,
-        ),
-        _InfoTile(
-          icon: Icons.home_rounded,
-          title: address.street,
-          subtitle: address.location,
-          color: AppColors.success,
-        ),
-        const _NoticeBox(
-          text: 'Adresse utilisée pour vos prochaines livraisons.',
+        _NoticeBox(
+          text:
+              'Saisissez les coordonnées de livraison au checkout. Elles sont enregistrées avec chaque commande.',
         ),
       ],
     ),
@@ -252,14 +247,15 @@ void _showPaymentSheet(BuildContext context) {
       children: [
         _InfoTile(
           icon: Icons.payments_rounded,
-          title: 'Paiement à la livraison',
-          subtitle: 'Mode actif pour vos commandes',
-          color: AppColors.success,
+          title: 'FedaPay sandbox',
+          subtitle:
+              'Le paiement se fait au checkout et est vérifié par le serveur.',
+          color: AppColors.primary,
         ),
         _InfoTile(
           icon: Icons.credit_card_off_rounded,
-          title: 'Carte bancaire',
-          subtitle: 'Indisponible pour le moment',
+          title: 'Modes proposés par FedaPay',
+          subtitle: 'Selon la configuration de votre compte sandbox.',
           color: AppColors.warning,
         ),
       ],
@@ -282,8 +278,7 @@ void _showDeliveriesSheet(
           (option) => _InfoTile(
             icon: Icons.local_shipping_rounded,
             title: option.name,
-            subtitle:
-                '${option.estimatedLabel} · ${option.fee.toStringAsFixed(2)} €',
+            subtitle: '${option.estimatedLabel} · ${formatCfa(option.fee)}',
             color: AppColors.primary,
           ),
         ),

@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified Boolean        @default(false)
+  passwordHash  String
+  role          String         @default("client")
+  avatarUrl     String?
+  vendorProfile VendorProfile?
+  clientOrders  Order[]        @relation("ClientOrders")
+  refreshTokens RefreshToken[]
+  addresses SavedAddress[]
+  notifications AppNotification[]
+  loyaltyTransactions LoyaltyTransaction[]
+  emailVerification EmailVerificationChallenge?
+  shopReviews ShopReview[]
+  checkoutPayments CheckoutPayment[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model EmailVerificationChallenge {
+  email      String   @id
+  codeHash   String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  sentAt     DateTime @default(now())
+  user       User     @relation(fields: [email], references: [email], onDelete: Cascade)
+}
+
+model VendorProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopName            String
+  shopTagline         String?
+  shopDescription     String?
+  shopBannerUrl       String?
+  shopCity            String?
+  shopCountry         String?
+  shopCategoriesJson  String    @default("[]")
+  isVerified          Boolean   @default(false)
+  shopSales           Int       @default(0)
+  shopRating          Float     @default(0)
+  shopReviewCount     Int       @default(0)
+  shopResponseMinutes Int       @default(60)
+  shopFoundedYear     Int?
+  products            Product[]
+  orders              Order[]   @relation("VendorOrders")
+  reviews             ShopReview[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Product {
+  id               String         @id @default(cuid())
+  vendorId         String
+  vendor           VendorProfile  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name             String
+  shortDescription String
+  longDescription  String
+  price            Float
+  originalPrice    Float?
+  imageUrl         String
+  category         String
+  tagsJson         String         @default("[]")
+  specificationsJson String       @default("{}")
+  rating           Float          @default(0)
+  reviewCount      Int            @default(0)
+  stock            Int            @default(0)
+  isActive         Boolean        @default(true)
+  freeShipping     Boolean        @default(false)
+  warrantyMonths   Int            @default(12)
+  gallery          ProductImage[]
+  orderItems       OrderItem[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([vendorId])
+  @@index([category])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int      @default(0)
+}
+
+model Order {
+  id             String         @id @default(cuid())
+  clientId       String
+  client         User           @relation("ClientOrders", fields: [clientId], references: [id], onDelete: Restrict)
+  vendorId       String
+  vendor         VendorProfile  @relation("VendorOrders", fields: [vendorId], references: [id], onDelete: Restrict)
+  status         String         @default("pending")
+  deliveryMethod String
+  deliveryFee    Float          @default(0)
+  deliveryName   String
+  deliveryPhone  String
+  deliveryStreet String
+  deliveryCity   String
+  deliveryCountry String
+  total          Float
+  items          OrderItem[]
+  loyaltyTransaction LoyaltyTransaction?
+  shopReview ShopReview?
+  paymentStatus String @default("not_required")
+  checkoutPaymentId String?
+  checkoutPayment CheckoutPayment? @relation(fields: [checkoutPaymentId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([clientId])
+  @@index([vendorId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName String
+  unitPrice   Float
+  quantity    Int
+}
+
+model CheckoutPayment {
+  id                    String   @id @default(cuid())
+  clientId              String
+  client                User     @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  orderIdsJson          String
+  amount                Float
+  amountXof             Int
+  currency              String   @default("XOF")
+  status                String   @default("pending")
+  providerTransactionId String?  @unique
+  checkoutUrl           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  orders                Order[]
+
+  @@index([clientId, createdAt])
+}
+
+model ShopReview {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendorId  String
+  vendor    VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime      @default(now())
+
+  @@index([vendorId, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model SavedAddress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   @default("Maison")
+  fullName  String
+  phone     String
+  street    String
+  city      String
+  country   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isDefault])
+}
+
+model AppNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @default("order")
+  title     String
+  message   String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model LoyaltyTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  points    Int
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PlatformConfig {
+  id                  String   @id @default("default")
+  categoriesJson      String   @default("[]")
+  featuredSlidesJson  String   @default("[]")
+  deliveryOptionsJson String   @default("[]")
+  updatedAt           DateTime @updatedAt
+}

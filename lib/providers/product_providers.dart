@@ -1,33 +1,34 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/datasources/marketplace_api.dart';
-import '../data/models/product.dart';
-import '../data/repositories/product_repository.dart';
-
-final marketplaceApiProvider = Provider<MarketplaceApi>((ref) {
-  return MarketplaceApi();
-});
-
-final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  return ProductRepository(ref.watch(marketplaceApiProvider));
-});
+import '../core/providers/core_providers.dart';
+import 'package:shophub/domain/entities/product.dart';
+import '../domain/usecases/catalog_use_cases.dart';
 
 class ProductCatalogNotifier extends StateNotifier<AsyncValue<List<Product>>> {
-  final ProductRepository _repository;
+  final CatalogUseCases _useCases;
 
-  ProductCatalogNotifier(this._repository) : super(const AsyncLoading()) {
+  ProductCatalogNotifier(this._useCases) : super(const AsyncLoading()) {
     _load();
   }
 
   Future<void> _load() async {
     state = const AsyncLoading();
     try {
-      state = AsyncData(await _repository.getAll());
+      state = AsyncData(await _useCases.getProducts());
     } catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
     }
   }
 
   List<Product> get _items => state.valueOrNull ?? const [];
+
+  Future<Product> saveProduct(Product product, {required bool isNew}) async {
+    final saved = await _useCases.saveProduct(product, isNew: isNew);
+    state = AsyncData([
+      saved,
+      ..._items.where((item) => item.id != saved.id),
+    ]);
+    return saved;
+  }
 
   void addProduct(Product product) {
     state = AsyncData([product, ..._items]);
@@ -74,7 +75,7 @@ class ProductCatalogNotifier extends StateNotifier<AsyncValue<List<Product>>> {
 final productsProvider =
     StateNotifierProvider<ProductCatalogNotifier, AsyncValue<List<Product>>>(
   (ref) {
-    return ProductCatalogNotifier(ref.watch(productRepositoryProvider));
+    return ProductCatalogNotifier(ref.watch(catalogUseCasesProvider));
   },
 );
 

@@ -1,65 +1,37 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../data/models/vendor_order.dart';
+import 'package:shophub/domain/entities/order.dart';
+import 'package:shophub/domain/entities/vendor_order.dart';
+import '../core/providers/core_providers.dart';
+import '../domain/usecases/orders_use_cases.dart';
 
 class VendorOrdersNotifier extends StateNotifier<List<VendorOrder>> {
-  VendorOrdersNotifier() : super(_initialOrders);
+  final OrdersUseCases _ordersUseCases;
 
-  static final _initialOrders = [
-    VendorOrder(
-      id: '#SH-1284',
-      vendorId: 'v1',
-      clientName: 'Alex Martin',
-      productName: 'Casque Audio Pro X2',
-      quantity: 1,
-      total: 179.99,
-      deliveryCity: 'Cotonou',
-      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-      status: VendorOrderStatus.pending,
-    ),
-    VendorOrder(
-      id: '#SH-1271',
-      vendorId: 'v1',
-      clientName: 'Maya Lawson',
-      productName: 'Montre Connectée Aura',
-      quantity: 2,
-      total: 598,
-      deliveryCity: 'Porto-Novo',
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      status: VendorOrderStatus.confirmed,
-    ),
-    VendorOrder(
-      id: '#SH-1268',
-      vendorId: 'v2',
-      clientName: 'Chris Mensah',
-      productName: 'Sneakers Urban White',
-      quantity: 1,
-      total: 119,
-      deliveryCity: 'Abomey-Calavi',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      status: VendorOrderStatus.shipped,
-    ),
-    VendorOrder(
-      id: '#SH-1262',
-      vendorId: 'v3',
-      clientName: 'Nora Hounsou',
-      productName: 'Lampe Nordique',
-      quantity: 1,
-      total: 79.90,
-      deliveryCity: 'Cotonou',
-      createdAt: DateTime.now().subtract(const Duration(days: 4)),
-      status: VendorOrderStatus.delivered,
-    ),
-  ];
+  VendorOrdersNotifier(this._ordersUseCases) : super(const []) {
+    _load();
+  }
 
-  void updateStatus(String orderId, VendorOrderStatus status) {
+  Future<void> _load() async {
+    try {
+      final orders = await _ordersUseCases.getMyOrders();
+      state = orders.map(_toVendorOrder).toList();
+    } catch (_) {
+      state = const [];
+    }
+  }
+
+  Future<void> updateStatus(String orderId, VendorOrderStatus status) async {
+    final order = await _ordersUseCases.updateVendorOrderStatus(
+      orderId: orderId,
+      status: OrderStatus.values.byName(status.name),
+    );
     state = [
-      for (final order in state)
-        if (order.id == orderId) order.copyWith(status: status) else order,
+      for (final item in state)
+        if (item.id == orderId) _toVendorOrder(order) else item,
     ];
   }
 
-  void advance(String orderId) {
+  Future<void> advance(String orderId) async {
     final order = state.firstWhere((item) => item.id == orderId);
     final next = switch (order.status) {
       VendorOrderStatus.pending => VendorOrderStatus.confirmed,
@@ -67,20 +39,38 @@ class VendorOrdersNotifier extends StateNotifier<List<VendorOrder>> {
       VendorOrderStatus.shipped => VendorOrderStatus.delivered,
       VendorOrderStatus.delivered => VendorOrderStatus.delivered,
     };
-    updateStatus(orderId, next);
+    await updateStatus(orderId, next);
+  }
+
+  VendorOrder _toVendorOrder(Order order) {
+    final names = order.items
+        .map((item) => item.product.name)
+        .where((name) => name.isNotEmpty);
+    final quantity =
+        order.items.fold<int>(0, (sum, item) => sum + item.quantity);
+    return VendorOrder(
+      id: order.id,
+      vendorId: order.vendorId,
+      clientName: order.clientName,
+      productName: names.isEmpty ? 'Commande' : names.first,
+      quantity: quantity,
+      total: order.total,
+      deliveryCity: order.deliveryCity,
+      createdAt: order.createdAt,
+      status: VendorOrderStatus.values.byName(order.status.name),
+    );
   }
 }
 
 final vendorOrdersProvider =
     StateNotifierProvider<VendorOrdersNotifier, List<VendorOrder>>((ref) {
-  return VendorOrdersNotifier();
+  return VendorOrdersNotifier(ref.watch(ordersUseCasesProvider));
 });
 
-final vendorOrdersByVendorProvider = Provider.family<List<VendorOrder>, String>(
-  (ref, vendorId) {
-    return ref
-        .watch(vendorOrdersProvider)
-        .where((order) => order.vendorId == vendorId)
-        .toList();
-  },
-);
+final vendorOrdersByVendorProvider =
+    Provider.family<List<VendorOrder>, String>((ref, vendorId) {
+  return ref
+      .watch(vendorOrdersProvider)
+      .where((order) => order.vendorId == vendorId)
+      .toList();
+});

@@ -1,0 +1,87 @@
+import type {
+  CartLine,
+  DeliveryAddress,
+  NewProduct,
+  NewVendorProfile,
+  OrderView,
+  ProductFilter,
+  ProductView,
+  UserProfile,
+  VendorView,
+} from './models';
+
+export interface AuthRepository {
+  findUserByEmail(email: string): Promise<{ profile: UserProfile; passwordHash: string } | null>;
+  findUserById(id: string): Promise<UserProfile | null>;
+  createUser(input: {
+    name: string;
+    email: string;
+    passwordHash: string;
+    role: 'client' | 'vendor';
+    avatarUrl: string | null;
+    vendor?: NewVendorProfile;
+  }): Promise<UserProfile>;
+  createRefreshToken(input: { tokenHash: string; userId: string; expiresAt: Date }): Promise<void>;
+  findRefreshToken(tokenHash: string): Promise<{
+    id: string;
+    userId: string;
+    expiresAt: Date;
+    revokedAt: Date | null;
+  } | null>;
+  revokeRefreshToken(tokenHash: string, revokedAt: Date): Promise<void>;
+}
+
+export interface CatalogRepository {
+  listProducts(filter: ProductFilter): Promise<ProductView[]>;
+  findProduct(id: string): Promise<ProductView | null>;
+  listVendors(): Promise<VendorView[]>;
+  findVendor(id: string): Promise<VendorView | null>;
+  createProduct(userId: string, input: NewProduct): Promise<ProductView>;
+}
+
+export interface OrdersRepository {
+  listForUser(userId: string, role: 'client' | 'vendor'): Promise<OrderView[]>;
+  placeOrder(input: {
+    clientId: string;
+    items: CartLine[];
+    deliveryMethod: string;
+    deliveryFee: number;
+    address: DeliveryAddress;
+  }): Promise<OrderView[]>;
+  updateVendorOrderStatus(input: {
+    orderId: string;
+    vendorUserId: string;
+    status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  }): Promise<OrderView>;
+}
+
+export interface PasswordHasher {
+  hash(password: string): Promise<string>;
+  verify(password: string, hash: string): Promise<boolean>;
+}
+
+export interface RefreshTokenCodec {
+  hash(token: string): string;
+  expiresAt(): Date;
+}
+
+export interface AccessTokenService {
+  issueAccessToken(user: Pick<UserProfile, 'id' | 'role'>): string;
+  issueRefreshToken(user: Pick<UserProfile, 'id' | 'role'>): string;
+  verifyRefreshToken(token: string): { userId: string; role: string };
+}
+  updateUserProfile(id: string, input: {
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  }): Promise<UserProfile>;
+  updateVendorProfile(userId: string, input: {
+    shopName: string;
+    shopTagline: string | null;
+    shopDescription: string | null;
+    shopBannerUrl: string | null;
+    shopCity: string | null;
+    shopCountry: string | null;
+    categories: string[];
+  }): Promise<UserProfile>;
+

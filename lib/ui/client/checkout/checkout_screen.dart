@@ -1,11 +1,18 @@
+import '../../../core/currency.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shophub/domain/entities/checkout_payment.dart';
 
 import '../../../core/theme.dart';
-import '../../../data/models/cart_item.dart';
-import '../../../data/models/delivery_option.dart';
+import '../../../core/providers/core_providers.dart';
+import 'package:shophub/domain/entities/cart_item.dart';
+import 'package:shophub/domain/entities/delivery_option.dart';
 import '../../../providers/cart_providers.dart';
 import '../../../providers/checkout_providers.dart';
+import '../../../providers/orders_providers.dart';
+import '../../../providers/auth_providers.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -14,32 +21,165 @@ class CheckoutScreen extends ConsumerStatefulWidget {
   ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen>
+    with WidgetsBindingObserver {
   bool _isSubmitting = false;
   bool _isConfirmed = false;
+  bool _checkingPayment = false;
+  bool _paymentFailed = false;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _streetController = TextEditingController();
+  final _cityController = TextEditingController(text: 'Cotonou');
+  final _countryController = TextEditingController(text: 'Bénin');
+  CheckoutPayment? _pendingPayment;
+  CheckoutPaymentStatus? _paymentStatus;
+  Timer? _paymentTimer;
   double _confirmedTotal = 0;
   String _confirmedDeliveryLabel = '';
-  late final String _orderNumber;
+  late String _orderNumber;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _orderNumber = 'SH-${DateTime.now().millisecondsSinceEpoch}';
+    final user = ref.read(authProvider);
+    _nameController.text = user?.name ?? '';
+    _emailController.text = user?.email ?? '';
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _paymentTimer?.cancel();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _streetController.dispose();
+    _cityController.dispose();
+    _countryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _pendingPayment != null &&
+        !_isConfirmed &&
+        !_paymentFailed) {
+      unawaited(_refreshPayment());
+    }
   }
 
   Future<void> _confirmOrder() async {
+    final values = [
+      _nameController,
+      _emailController,
+      _phoneController,
+      _streetController,
+      _cityController,
+      _countryController
+    ].map((controller) => controller.text.trim()).toList();
+    if (values.any((value) => value.isEmpty) ||
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(values[1])) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Complète une adresse et un email valides.')));
+      return;
+    }
+    if (ref.read(isDemoModeProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Le paiement FedaPay est indisponible en mode démo.')));
+      return;
+    }
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-
     final delivery = ref.read(selectedDeliveryOptionProvider);
-    _confirmedTotal = ref.read(checkoutTotalProvider);
-    _confirmedDeliveryLabel = delivery.estimatedLabel;
-    ref.read(cartProvider.notifier).clear();
+    final address = DeliveryAddress(
+        fullName: values[0],
+        phone: values[2],
+        street: values[3],
+        city: values[4],
+        country: values[5]);
+    try {
+      final payment = await ref.read(ordersUseCasesProvider).startCheckout(
+          items: ref.read(cartProvider),
+          address: address,
+          delivery: delivery,
+          customerEmail: values[1]);
+      if (!mounted) return;
+      ref.invalidate(myOrdersProvider);
+      _confirmedTotal = payment.amountXof.toDouble();
+      _confirmedDeliveryLabel = delivery.estimatedLabel;
+      if (payment.orders.isNotEmpty) _orderNumber = payment.orders.first.id;
+      setState(() {
+        _pendingPayment = payment;
+        _isSubmitting = false;
+      });
+      await _openPaymentPage();
+      _paymentTimer?.cancel();
+      _paymentTimer =
+          Timer.periodic(const Duration(seconds: 6), (_) => _refreshPayment());
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error.toString()),
+          behavior: SnackBarBehavior.floating));
+    }
+  }
 
+  Future<void> _openPaymentPage() async {
+    final payment = _pendingPayment;
+    if (payment == null) return;
+    final opened = await launchUrl(Uri.parse(payment.checkoutUrl),
+        mode: LaunchMode.externalApplication);
+    if (!opened && mounted)
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Impossible d’ouvrir la page FedaPay.')));
+  }
+
+  Future<void> _refreshPayment() async {
+    final payment = _pendingPayment;
+    if (payment == null || _checkingPayment || _paymentFailed || _isConfirmed)
+      return;
+    setState(() => _checkingPayment = true);
+    try {
+      final status =
+          await ref.read(ordersUseCasesProvider).refreshPayment(payment.id);
+      if (!mounted) return;
+      _paymentStatus = status;
+      if (status.status == 'paid') {
+        _paymentTimer?.cancel();
+        ref.invalidate(myOrdersProvider);
+        ref.read(cartProvider.notifier).clear();
+        setState(() {
+          _isConfirmed = true;
+          _checkingPayment = false;
+        });
+        return;
+      }
+      if (status.status == 'failed' || status.status == 'refunded') {
+        _paymentTimer?.cancel();
+        ref.invalidate(myOrdersProvider);
+        setState(() {
+          _paymentFailed = true;
+          _checkingPayment = false;
+        });
+        return;
+      }
+    } catch (_) {
+      // Keep pending if the status service is temporarily unavailable.
+    }
+    if (mounted) setState(() => _checkingPayment = false);
+  }
+
+  void _retryCheckout() {
+    _paymentTimer?.cancel();
     setState(() {
-      _isSubmitting = false;
-      _isConfirmed = true;
+      _pendingPayment = null;
+      _paymentStatus = null;
+      _paymentFailed = false;
     });
   }
 
@@ -53,10 +193,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
     }
 
+    if (_pendingPayment != null) {
+      return _PaymentPendingView(
+          payment: _pendingPayment!,
+          status: _paymentStatus?.status ?? 'pending',
+          checking: _checkingPayment,
+          failed: _paymentFailed,
+          onOpen: _openPaymentPage,
+          onRefresh: _refreshPayment,
+          onRetry: _retryCheckout);
+    }
+
     final items = ref.watch(cartProvider);
     final subtotal = ref.watch(cartTotalProvider);
     final total = ref.watch(checkoutTotalProvider);
-    final address = ref.watch(deliveryAddressProvider);
     final deliveryOptions = ref.watch(deliveryOptionsProvider);
     final selectedDelivery = ref.watch(selectedDeliveryOptionProvider);
 
@@ -75,7 +225,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           children: [
             _Section(
               title: 'Adresse de livraison',
-              child: _AddressBlock(address: address),
+              child: Column(children: [
+                _checkoutField(_nameController, 'Nom complet'),
+                _checkoutField(_emailController, 'Email du reçu',
+                    type: TextInputType.emailAddress),
+                _checkoutField(_phoneController, 'Téléphone',
+                    type: TextInputType.phone),
+                _checkoutField(_streetController, 'Rue et numéro'),
+                Row(children: [
+                  Expanded(child: _checkoutField(_cityController, 'Ville')),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: _checkoutField(_countryController, 'Pays'))
+                ]),
+              ]),
             ),
             const SizedBox(height: AppSpacing.lg),
             _Section(
@@ -125,11 +287,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Paiement à la livraison',
+                          'FedaPay · Sandbox',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Text(
-                          'Aucune transaction en ligne nécessaire',
+                          'Paiement sécurisé en francs CFA (XOF).',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -151,6 +313,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 }
+
+Widget _checkoutField(TextEditingController controller, String label,
+        {TextInputType? type}) =>
+    Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: TextField(
+          controller: controller,
+          keyboardType: type,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(labelText: label)),
+    );
 
 class _Section extends StatelessWidget {
   final String title;
@@ -178,58 +351,6 @@ class _Section extends StatelessWidget {
           child,
         ],
       ),
-    );
-  }
-}
-
-class _AddressBlock extends StatelessWidget {
-  final DeliveryAddress address;
-
-  const _AddressBlock({required this.address});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: const Icon(
-            Icons.location_on_rounded,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                address.fullName,
-                style: TextStyle(
-                  color: context.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(address.phone, style: Theme.of(context).textTheme.bodySmall),
-              Text(
-                address.street,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Text(
-                address.location,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -325,7 +446,7 @@ class _DeliveryOptionTile extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              '${option.fee.toStringAsFixed(2)} €',
+              '${formatCfa(option.fee)}',
               style: TextStyle(
                 color: context.onSurface,
                 fontWeight: FontWeight.w700,
@@ -391,7 +512,7 @@ class _OrderItemRow extends StatelessWidget {
             ),
           ),
           Text(
-            '${item.subtotal.toStringAsFixed(2)} €',
+            '${formatCfa(item.subtotal)}',
             style: const TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.w700,
@@ -451,7 +572,7 @@ class _CheckoutBottomBar extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Confirmer la commande'),
+                    : const Text('Continuer vers le paiement'),
               ),
             ),
           ],
@@ -485,7 +606,7 @@ class _PriceRow extends StatelessWidget {
         ),
         const Spacer(),
         Text(
-          '${value.toStringAsFixed(2)} €',
+          '${formatCfa(value)}',
           style: TextStyle(
             color: isTotal ? AppColors.primary : context.onSurface,
             fontWeight: FontWeight.w700,
@@ -533,13 +654,13 @@ class _ConfirmationView extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xxl),
               Text(
-                'Commande confirmée',
+                'Paiement confirmé',
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Votre commande a bien été enregistrée.',
+                'La boutique peut maintenant préparer votre commande.',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -560,7 +681,7 @@ class _ConfirmationView extends StatelessWidget {
                     const SizedBox(height: AppSpacing.sm),
                     _InfoLine(
                       label: 'Total',
-                      value: '${total.toStringAsFixed(2)} €',
+                      value: '${formatCfa(total)}',
                     ),
                   ],
                 ),
@@ -578,6 +699,83 @@ class _ConfirmationView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PaymentPendingView extends StatelessWidget {
+  final CheckoutPayment payment;
+  final String status;
+  final bool checking;
+  final bool failed;
+  final VoidCallback onOpen;
+  final VoidCallback onRefresh;
+  final VoidCallback onRetry;
+  const _PaymentPendingView(
+      {required this.payment,
+      required this.status,
+      required this.checking,
+      required this.failed,
+      required this.onOpen,
+      required this.onRefresh,
+      required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = formatCfa(payment.amountXof);
+    return Scaffold(
+        appBar: AppBar(title: const Text('Paiement de la commande')),
+        body: SafeArea(
+            child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                    failed
+                        ? Icons.error_outline_rounded
+                        : Icons.lock_clock_rounded,
+                    size: 58,
+                    color: failed ? AppColors.danger : AppColors.primary),
+                const SizedBox(height: AppSpacing.lg),
+                Text(failed ? 'Paiement non abouti' : 'Paiement en attente',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                    failed
+                        ? 'La commande n’a pas été transmise à la boutique. Votre panier est conservé.'
+                        : 'Terminez le paiement chez FedaPay, puis revenez ici. Le serveur vérifie le statut.',
+                    textAlign: TextAlign.center),
+                const SizedBox(height: AppSpacing.xl),
+                Text(amount,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Référence ' + payment.id, textAlign: TextAlign.center),
+                if (checking) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  const Center(child: CircularProgressIndicator())
+                ],
+                const SizedBox(height: AppSpacing.xl),
+                if (!failed) ...[
+                  ElevatedButton.icon(
+                      onPressed: onOpen,
+                      icon: const Icon(Icons.open_in_new_rounded),
+                      label: const Text('Ouvrir FedaPay')),
+                  OutlinedButton.icon(
+                      onPressed: checking ? null : onRefresh,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(status == 'paid'
+                          ? 'Paiement confirmé'
+                          : 'Vérifier le paiement')),
+                ] else
+                  ElevatedButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.replay_rounded),
+                      label: const Text('Réessayer le paiement')),
+              ]),
+        )));
   }
 }
 
